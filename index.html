@@ -572,11 +572,10 @@ function clinBlock(){const c=S.clin;
   ${c.resp==="S"?`<div class="grid clin-form" style="margin-top:16px">
    <div class="full"><label class="f" id="w-cnome">Nome da clínica<input type="text" id="c-nome" data-c="nome" value="${esc(c.nome)}"><span class="msg" id="m-cnome"></span></label></div>
    <label class="f"><span>Especialidade <small>opcional</small></span><input type="text" id="c-esp" data-c="esp" placeholder="Ex.: cardiologia" value="${esc(c.esp)}"></label>
-   <label class="f" id="w-ccontato">Responsável<input type="text" id="c-contato" data-c="contato" value="${esc(c.contato)}"><span class="msg" id="m-ccontato"></span></label>
-   <label class="f" id="w-ctel">Telefone ou WhatsApp<input type="tel" id="c-tel" data-c="tel" inputmode="tel" placeholder="(92) 99999-9999" value="${esc(c.tel)}"><span class="msg" id="m-ctel"></span></label>
+   <label class="f" id="w-ctel"><span>Telefone ou WhatsApp <small>opcional</small></span><input type="tel" id="c-tel" data-c="tel" inputmode="tel" placeholder="(92) 99999-9999" value="${esc(c.tel)}"><span class="msg" id="m-ctel"></span></label>
    <div class="full"><button type="button" class="btn primary" id="clinBtn">Enviar indicação</button><div class="status err" id="clinMsg" role="status" style="margin-top:10px"></div></div>
   </div>`:""}`}
-function clinErrs(){const c=S.clin;return {cnome:c.nome.trim()?"":"Obrigatório.",ccontato:c.contato.trim()?"":"Obrigatório.",ctel:digits(c.tel).length>=10?"":(c.tel.trim()?"Inclua o DDD.":"Obrigatório.")}}
+function clinErrs(){const c=S.clin,d=digits(c.tel);return {cnome:c.nome.trim()?"":"Obrigatório.",ctel:!d.length||d.length>=10?"":"Inclua o DDD."}}
 function showClinErrs(){const r=clinErrs();Object.keys(r).forEach(k=>{const m=document.getElementById("m-"+k),w=document.getElementById("w-"+k);if(m)m.textContent=r[k];if(w)w.classList.toggle("bad",!!r[k])});return Object.values(r).some(Boolean)}
 
 /* carta: abre sozinha e libera a confirmação só no fim da leitura */
@@ -676,10 +675,10 @@ view.addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b)ret
     b.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
     const r=document.getElementById("q-"+q);if(r&&S.people.every(pp=>ans(pp,q))){r.classList.remove("missing");const qm=document.getElementById("qm-"+q);if(qm)qm.textContent=""}
     if(b.dataset.v==="N")delete S.det[p+"-"+q];updProgress();return}
-  if(b.dataset.clin){S.clin.resp=b.dataset.clin;if(b.dataset.clin==="S"&&!S.clin.tel)S.clin.tel=S.emp.tel;const sec=document.getElementById("clinSec");sec.innerHTML=clinBlock();
+  if(b.dataset.clin){S.clin.resp=b.dataset.clin;const sec=document.getElementById("clinSec");sec.innerHTML=clinBlock();
     if(b.dataset.clin==="S"&&!REDUCE){const f=sec.querySelector(".clin-form");if(f)f.classList.add("pop-in")}const n=document.getElementById("c-nome");if(n)n.focus({preventScroll:true});return}
   if(b.id==="clinBtn"){if(b.disabled)return;S.clin.tried=true;if(showClinErrs())return;const m=document.getElementById("clinMsg");m.textContent="";setBusyBtn(b,true,"Enviando");
-    api("indicar_clinica",{protocolo:S.sent.proto,token:S.sent.token,clinica:{nome:S.clin.nome.trim(),especialidade:S.clin.esp.trim()||null,responsavel:S.clin.contato.trim(),telefone:digits(S.clin.tel)}})
+    api("indicar_clinica",{protocolo:S.sent.proto,token:S.sent.token,clinica:{nome:S.clin.nome.trim(),especialidade:S.clin.esp.trim()||null,telefone:digits(S.clin.tel)||null}})
     .then(()=>{S.clin.sent=true;const sec=document.getElementById("clinSec");sec.innerHTML=clinBlock()})
     .catch(()=>{setBusyBtn(b,false,"Enviar indicação");m.textContent="Não foi possível enviar. Tente de novo."});return}
   if(b.id==="addDep"){S.people.push(newPerson(false));render();const l=S.people[S.people.length-1],el=document.getElementById(l.id+"-nome");if(el){if(!REDUCE)el.closest(".sec").classList.add("pop");el.focus({preventScroll:true});el.scrollIntoView({block:"center",behavior:REDUCE?"auto":"smooth"})}return}
