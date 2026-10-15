@@ -138,6 +138,7 @@ details.letter li{margin-bottom:4px}
 .seg button[aria-pressed=true][data-v=S]{background:var(--brand);color:var(--on)}
 .seg button[aria-pressed=true][data-v=N]{background:#5B5355;color:var(--on)}
 .seg button:focus-visible{outline:2px solid var(--brand);outline-offset:-2px}
+.na{display:inline-flex;align-items:center;height:34px;padding:0 10px;font-size:.8rem;color:var(--faint);font-style:italic;white-space:nowrap}
 .alert{grid-column:2/-1;font-size:.82rem;background:var(--warn-bg);color:var(--warn);border-radius:6px;padding:8px 10px}
 /* empilhado: celular ou mais de 3 beneficiários */
 .stacked .qhead{display:none}
@@ -377,7 +378,11 @@ function empErr(f,final){const v=String(S.emp[f]||"").trim();
   }return ""}
 const personFields=p=>p.titular?["nome","cpf","nasc","sexo","peso","altura"]:["nome","cpf","nasc","sexo","parent","peso","altura"];
 const EMPF=["tel","email"];
-const ans=(p,q)=>(S.ans[p.id]||{})[q];
+/* perguntas que só se aplicam a parte das pessoas: nº da pergunta -> idade mínima, só sexo feminino */
+const SO_FEMININO={9:0,24:10,25:10};
+function applies(p,q){if(!(q in SO_FEMININO))return true;if(p.sexo!=="Feminino")return false;const a=age(p.nasc);return isNaN(a)||a>=SO_FEMININO[q]}
+const ans=(p,q)=>applies(p,q)?(S.ans[p.id]||{})[q]:"NA";
+const qVisible=q=>S.people.some(p=>applies(p,q));
 function yesList(){const o=[];for(let q=1;q<=26;q++)S.people.forEach(p=>{if(ans(p,q)==="S")o.push({p,q})});return o}
 const dkey=(p,q)=>p.id+"-"+q;
 function detErr(p,q,final){const d=S.det[dkey(p,q)]||{},r={ano:"",desc:""},y=String(d.ano||"").trim(),cur=new Date().getFullYear();
@@ -495,19 +500,19 @@ function showEmpErr(f,final){const m=document.getElementById("em-"+f);if(!m)retu
 
 function v2(){const n=S.people.length,cls=(n>3?"stacked ":"")+(n===1?"single":"");return `<div class="sheet ${cls}">
  <div class="sec"><h1>Questionário de saúde</h1><p class="hint">Ao responder Sim, você detalha na próxima etapa.</p></div>
- <div class="progress" aria-live="polite"><span><b id="pc">0</b> de 26</span><div class="track"><div class="fill" id="pf"></div></div></div>
+ <div class="progress" aria-live="polite"><span><b id="pc">0</b> de ${QUESTIONS.filter((_,i)=>qVisible(i+1)).length}</span><div class="track"><div class="fill" id="pf"></div></div></div>
  ${n>1?`<div class="qhead"><span></span><span>Pergunta</span><div class="cols">${S.people.map(p=>`<span title="${esc(p.nome)}"><small>${p.titular?"Titular":"Dependente "+S.people.indexOf(p)}</small>${esc(shortName(p))}</span>`).join("")}</div></div>`:""}
- ${QUESTIONS.map((t,i)=>qRow(i+1,t)).join("")}
+ ${QUESTIONS.map((t,i)=>qVisible(i+1)?qRow(i+1,t):"").join("")}
 </div>`}
 function qRow(q,t){return `<div class="qrow" id="q-${q}">
  <span class="qn">${q}</span><span class="qt">${esc(t)}</span>
  <div class="ctrls">${S.people.map(p=>`<div class="pc"><span class="pname"><b>${esc(shortName(p))}</b> · ${p.titular?"Titular":"Dependente "+S.people.indexOf(p)}</span>
-  <span class="seg" role="group" aria-label="Pergunta ${q}, ${esc(shortName(p))}">${["S","N"].map(v=>`<button type="button" data-v="${v}" data-p="${p.id}" data-q="${q}" aria-pressed="${ans(p,q)===v}">${v==="S"?"Sim":"Não"}</button>`).join("")}</span></div>`).join("")}</div>
+  ${!applies(p,q)?`<span class="na">Não se aplica</span>`:`<span class="seg" role="group" aria-label="Pergunta ${q}, ${esc(shortName(p))}">${["S","N"].map(v=>`<button type="button" data-v="${v}" data-p="${p.id}" data-q="${q}" aria-pressed="${ans(p,q)===v}">${v==="S"?"Sim":"Não"}</button>`).join("")}</span>`}</div>`).join("")}</div>
  <span class="msg qmsg" id="qm-${q}"></span>
  ${q===3?`<div id="q3alerts" style="display:contents"></div>`:""}</div>`}
 function q3Alerts(){const el=document.getElementById("q3alerts");if(!el)return;
   const h=S.people.filter(p=>imc(p)>=30&&!(age(p.nasc)<18)&&ans(p,3)==="N").map(p=>`<div class="alert">${esc(shortName(p))}: IMC ${fmt1(imc(p))} está na faixa de obesidade. Confira a resposta.</div>`).join("");if(el.innerHTML!==h)el.innerHTML=h}
-function updProgress(){let n=0;for(let q=1;q<=26;q++)if(S.people.every(p=>ans(p,q)))n++;const pc=document.getElementById("pc");if(pc){pc.textContent=n;document.getElementById("pf").style.transform="scaleX("+n/26+")"}q3Alerts()}
+function updProgress(){let n=0,t=0;for(let q=1;q<=26;q++){if(!qVisible(q))continue;t++;if(S.people.every(p=>ans(p,q)))n++}const pc=document.getElementById("pc");if(pc){pc.textContent=n;document.getElementById("pf").style.transform="scaleX("+(t?n/t:0)+")"}q3Alerts()}
 
 function v3(){const list=yesList();return `<div class="sheet">
  <div class="sec"><h1>Detalhes</h1>${list.length?`<p class="hint">Para cada resposta Sim: ano, tratamento e situação atual.</p>`:""}</div>
@@ -532,11 +537,11 @@ function v4(){const ppl=S.people,list=yesList(),e=S.emp;return `<div class="shee
   <div class="row-head"><h2>${esc(p.nome)}</h2><span class="tag">${p.titular?"Titular":esc(p.parent||label(p))}</span></div>
   <p class="rv-meta">${fmt1(num(p.peso))} kg · ${fmt2(num(p.altura))} m · IMC ${fmt1(imc(p))}</p>
   ${yes.length?`<ul class="rv-yes">${yes.map(q=>{const d=S.det[dkey(p,q)]||{};return `<li><b>${q}. ${esc(QUESTIONS[q-1])}</b><span>${esc(d.ano)} · ${esc(d.desc)}</span></li>`}).join("")}</ul>`
-    :`<p class="rv-none">Respondeu Não a todas as 26 perguntas.</p>`}
+    :`<p class="rv-none">Respondeu Não a todas as perguntas.</p>`}
  </div>`}).join("")}
  <div class="sec"><details class="letter all"><summary>Ver todas as respostas</summary><div class="body" style="max-height:none;padding:0 0 4px"><div class="tablebox"><table>
   <thead><tr><th>Pergunta</th>${ppl.map(p=>`<th class="c">${esc(shortName(p))}</th>`).join("")}</tr></thead>
-  <tbody>${QUESTIONS.map((t,i)=>`<tr><td>${i+1}. ${esc(t)}</td>${ppl.map(p=>{const a=ans(p,i+1);return `<td class="c ${a==="S"?"yes":""}">${a==="S"?"Sim":a==="N"?"Não":"–"}</td>`}).join("")}</tr>`).join("")}</tbody>
+  <tbody>${QUESTIONS.map((t,i)=>`<tr><td>${i+1}. ${esc(t)}</td>${ppl.map(p=>{const a=ans(p,i+1);return `<td class="c ${a==="S"?"yes":""}">${a==="S"?"Sim":a==="N"?"Não":a==="NA"?"N/A":"–"}</td>`}).join("")}</tr>`).join("")}</tbody>
  </table></div></div></details></div>
  <div class="sec">
   <div class="field-block" id="w-verdade"><label class="check"><input type="checkbox" id="verdade" ${S.verdade?"checked":""}><span>${VERDADE}</span></label><span class="msg" id="m-verdade"></span></div>
@@ -627,7 +632,7 @@ function gerarPDF(){const lib=window.jspdf;if(!lib||!lib.jsPDF||!lib.jsPDF.API.a
   sec("Declaração de Saúde");
   const pc={};ppl.forEach((p,i)=>pc[i+2]={cellWidth:11,halign:"center",fontStyle:"bold"});
   doc.autoTable({...base,startY:y,head:[["Nº","Pergunta",...ppl.map(shortLabel)]],styles:{...base.styles,fontSize:7.3},columnStyles:{0:{cellWidth:8,halign:"center"},...pc},
-    body:QUESTIONS.map((t,i)=>[String(i+1),t,...ppl.map(p=>ans(p,i+1)||"")]),
+    body:QUESTIONS.map((t,i)=>[String(i+1),t,...ppl.map(p=>{const a=ans(p,i+1);return a==="NA"?"N/A":(a||"")})]),
     didParseCell:d=>{if(d.section==="body"&&d.column.index>=2&&d.cell.raw==="S"){d.cell.styles.textColor=[255,255,255];d.cell.styles.fillColor=MARS}}});after();
   sec("Informações complementares");
   const list=yesList();
