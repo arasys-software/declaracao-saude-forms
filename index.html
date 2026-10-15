@@ -606,9 +606,12 @@ function setupSig(){const c=document.getElementById("sig"),box=document.getEleme
   c.addEventListener("pointermove",e=>{if(!st.down)return;e.preventDefault();const p=pos(e),pts=st.pts,l=pts[pts.length-1];
     const d=Math.hypot(p.x-l.x,p.y-l.y);if(d<1.2)return;st.len+=d;grow(p);pts.push(p);
     if(pts.length>=3){const a=pts[pts.length-3],b=pts[pts.length-2],m1={x:(a.x+b.x)/2,y:(a.y+b.y)/2},m2={x:(b.x+p.x)/2,y:(b.y+p.y)/2};
-      x.beginPath();x.lineWidth=Math.max(1.6,Math.min(3,3.2-d*.08));x.moveTo(m1.x,m1.y);x.quadraticCurveTo(b.x,b.y,m2.x,m2.y);x.stroke()}
-    else{x.beginPath();x.lineWidth=2.4;x.moveTo(l.x,l.y);x.lineTo(p.x,p.y);x.stroke()}});
-  const end=e=>{if(!st.down)return;st.down=false;box.classList.remove("active");sigExport()};
+      const s0=pts.length===3?a:m1;x.beginPath();x.lineWidth=Math.max(1.6,Math.min(3,3.2-d*.08));x.moveTo(s0.x,s0.y);x.quadraticCurveTo(b.x,b.y,m2.x,m2.y);x.stroke()}
+    });
+  const end=e=>{if(!st.down)return;st.down=false;box.classList.remove("active");const pts=st.pts,n=pts.length;
+    if(n===2){x.beginPath();x.lineWidth=2.4;x.moveTo(pts[0].x,pts[0].y);x.lineTo(pts[1].x,pts[1].y);x.stroke()}
+    else if(n>2){const b=pts[n-2],p=pts[n-1];x.beginPath();x.lineWidth=2.2;x.moveTo((b.x+p.x)/2,(b.y+p.y)/2);x.lineTo(p.x,p.y);x.stroke()}
+    sigExport()};
   c.addEventListener("pointerup",end);c.addEventListener("pointercancel",end);c.addEventListener("lostpointercapture",end)}
 function sigExport(){if(!sigPad)return;const {c,st,dpr}=sigPad,ok=st.len>=40&&(st.maxX-st.minX)>=24;
   const se=document.getElementById("sigState");
