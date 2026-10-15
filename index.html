@@ -22,7 +22,12 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 img{max-width:100%}
-body{background:var(--page);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.55;margin:0;-webkit-font-smoothing:antialiased}
+body{background:var(--page);color:var(--ink);font-family:var(--body);font-size:15.5px;line-height:1.55;margin:0;-webkit-font-smoothing:antialiased;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+body>main{flex:1 0 auto;width:100%;display:flex;flex-direction:column}
+body>main>#form{flex:1 0 auto;display:flex;flex-direction:column}
+#view{flex:1 0 auto;display:flex;flex-direction:column}
+body>.top,body>.actions,body>.foot{width:100%}
+@media (min-width:1280px){.wrap{max-width:840px}}
 .wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 
 /* cabeçalho */
@@ -118,7 +123,9 @@ details.letter li{margin-bottom:4px}
 .qt{font-size:.95rem}
 .ctrls,.cols{display:flex;gap:12px}
 .pc{width:112px;display:flex;flex-direction:column;align-items:center;gap:4px}
-.cols span{width:112px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cols span{width:112px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;flex-direction:column;gap:2px;text-transform:none;letter-spacing:0;font-size:.85rem;color:var(--ink)}
+.cols span small{font-size:.66rem;letter-spacing:.06em;text-transform:uppercase;color:var(--rose);font-weight:600}
+.pname b{color:var(--ink);font-weight:600}
 .pname{display:none;font-size:.82rem;color:var(--muted)}
 .seg{display:inline-flex;border:1px solid var(--field);border-radius:6px;overflow:hidden}
 .seg button{transition:background-color var(--d-fast) ease,color var(--d-fast) ease;font:inherit;font-size:.86rem;font-weight:500;width:54px;height:34px;border:0;background:var(--sheet);color:var(--ink);cursor:pointer}
@@ -166,7 +173,7 @@ tr:last-child td{border-bottom:0}
 @media (max-width:480px){.kv{grid-template-columns:minmax(0,1fr);gap:2px}.kv dd{margin-bottom:8px}}
 
 /* ações */
-.actions{position:sticky;bottom:0;background:var(--sheet);border-top:1px solid var(--line);margin-top:24px;padding-bottom:env(safe-area-inset-bottom,0px);z-index:4}
+.actions{position:sticky;bottom:0;background:var(--sheet);border-top:1px solid var(--line);margin-top:24px;flex:none;padding-bottom:env(safe-area-inset-bottom,0px);z-index:4}
 .actions .wrap{padding-block:12px;display:flex;gap:10px;justify-content:space-between;align-items:center}
 .btn{transition:background-color var(--d-fast) ease,border-color var(--d-fast) ease,transform .12s ease,opacity var(--d-fast) ease;font:inherit;font-weight:600;font-size:.95rem;border-radius:6px;padding:0 22px;height:44px;cursor:pointer;border:1px solid var(--brand)}
 .btn.primary{background:var(--brand);color:var(--on);margin-left:auto}
@@ -205,6 +212,7 @@ details.letter.all[open] summary::after{content:"Fechar"}
 /* privacidade */
 body.privacy .steps,body.privacy .steplbl{display:none}
 body.privacy main{padding-top:24px}
+body.privacy #view{justify-content:center;padding-block:8px 24px}
 .priv{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:16px}
 .priv li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;font-size:.95rem;color:var(--muted)}
 .priv li b{display:block;color:var(--ink);font-weight:600;margin-bottom:2px}
@@ -241,6 +249,16 @@ body.welcome .top,body.welcome .steps,body.welcome .steplbl,body.welcome .action
 .sec.fade-out{transition:opacity var(--d-out) var(--ease-in),transform var(--d-out) var(--ease-in);opacity:0;transform:translateY(-6px)}
 .msg:not(:empty),.alert,.errsum{animation:fadeUp var(--d-base) var(--ease-out) both}
 details.letter[open] .body{animation:fadeIn var(--d-base) var(--ease-out) both}
+details.carta .body{max-height:280px;scroll-behavior:smooth}
+details.carta h3{font-family:var(--head);font-size:.95rem;color:var(--title);margin:14px 0 4px}
+details.carta .attn{background:var(--tint);border-radius:6px;padding:10px 12px}
+details.carta.auto[open] .body{animation:letterOpen .7s var(--ease-out) both}
+@keyframes letterOpen{from{max-height:0;opacity:0;padding-bottom:0}to{max-height:280px;opacity:1}}
+.check.locked{opacity:.55;cursor:not-allowed}
+.check.locked input{cursor:not-allowed}
+.check{transition:opacity var(--d-base) ease}
+.lock-hint{margin:0;font-size:.82rem;color:var(--muted);display:flex;align-items:center;gap:6px}
+.lock-hint::before{content:"";width:12px;height:12px;flex:none;background:var(--muted);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M5 12l7 7 7-7'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M5 12l7 7 7-7'/%3E%3C/svg%3E") center/contain no-repeat}
 .okmark{width:44px;height:44px;margin-bottom:12px}
 .okmark circle{fill:var(--ok-bg);transform-origin:center;animation:ring .45s var(--ease-out) both}
 .okmark path{fill:none;stroke:var(--ok);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:30;stroke-dashoffset:30;animation:draw .45s var(--ease-out) .25s forwards}
@@ -308,7 +326,7 @@ const API="https://ornzjesebcztlsatwbaq.supabase.co/functions/v1/declaracao-saud
 const FORM_VERSAO="1.1";
 let uid=0;
 const newPerson=t=>({id:"p"+(++uid),titular:t,nome:"",cpf:"",nasc:"",sexo:"",parent:"",peso:"",altura:""});
-const fresh=()=>({welcome:true,lgpd:false,lgpdOk:false,lgpdAt:"",step:0,ciencia:false,emp:{nome:EMPRESA,tel:"",email:""},clin:{resp:"",nome:"",esp:"",contato:"",tel:"",sent:false},inicio:new Date().toISOString(),people:[newPerson(true)],ans:{},det:{},local:"Manaus",verdade:false,sent:null,touched:{}});
+const fresh=()=>({welcome:true,lgpd:false,lgpdOk:false,lgpdAt:"",step:0,ciencia:false,cartaFim:false,emp:{nome:EMPRESA,tel:"",email:""},clin:{resp:"",nome:"",esp:"",contato:"",tel:"",sent:false},inicio:new Date().toISOString(),people:[newPerson(true)],ans:{},det:{},local:"Manaus",verdade:false,sent:null,touched:{}});
 let S=fresh();
 const REDUCE=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 let busy=false;
@@ -363,7 +381,7 @@ function detErr(p,q,final){const d=S.det[dkey(p,q)]||{},r={ano:"",desc:""},y=Str
   else if(p.nasc&&+y<new Date(p.nasc+"T00:00:00").getFullYear())r.ano="Antes do nascimento.";
   const t=String(d.desc||"").trim();if(!t)r.desc=final?"Obrigatório.":"";else if(t.length<5&&final)r.desc="Detalhe um pouco mais.";return r}
 function stepErrs(step){const r={};
-  if(step===0){r.ciencia=S.ciencia?"":"Confirme a leitura da carta."}
+  if(step===0){r.ciencia=S.ciencia?"":(S.cartaFim?"Confirme a leitura da carta.":"Role a carta até o fim e confirme a leitura.")}
   if(step===4){r.verdade=S.verdade?"":"Marque para concluir.";r.local=S.local.trim()?"":"Obrigatório."}
   return r}
 function showStepErrs(step){if(!S.tried||!S.tried[step])return;const r=stepErrs(step);
@@ -393,6 +411,7 @@ function render(dir){document.body.classList.toggle("welcome",!!S.welcome);docum
   if(S.welcome){runSplash();return}
   if(!S.lgpdOk){if(dir)animateIn(dir);return}
   if(dir)animateIn(dir);showStepErrs(S.step);
+  if(!S.sent&&S.step===0)setupCarta(!!dir);
   if(!S.sent&&S.step===1){S.people.forEach(updDerived);EMPF.forEach(f=>showEmpErr(f,!!S.touched["emp"+f]))}
   if(!S.sent&&S.step===2)updProgress()}
 
@@ -414,17 +433,29 @@ function vPrivacy(){return `<div class="sheet">
 function v0(){return `<div class="sheet">
  <div class="sec"><h1>Orientação</h1></div>
  <div class="sec">
-  <details class="letter"><summary>Carta de Orientação ao Beneficiário (ANS)</summary><div class="body">
-   <p>Informe na declaração as doenças ou lesões que você ou seus dependentes saibam ter no momento da contratação. Se toma medicamento regularmente, faz acompanhamento médico, teve exame com diagnóstico, internação ou cirurgia, <strong>declare</strong>.</p>
+  <details class="letter carta" id="carta"><summary>Carta de Orientação ao Beneficiário (ANS)</summary><div class="body" id="cartaBody" tabindex="0">
+   <p>A Agência Nacional de Saúde Suplementar (ANS), instituição que regula as atividades das operadoras de planos privados de assistência à saúde, presta por meio desta informações para o preenchimento da Declaração de Saúde.</p>
+   <h3>O que é a Declaração de Saúde?</h3>
+   <p>É o formulário que acompanha o contrato do plano de saúde, onde o beneficiário ou seu representante legal/financeiro informa as doenças ou lesões preexistentes que saiba ser portador ou sofredor no momento da contratação. Para o preenchimento, o beneficiário tem o direito de ser orientado, gratuitamente, por um médico credenciado/referenciado pela operadora. Se optar por um profissional de sua livre escolha, assumirá o custo dessa opção. Se você toma medicamentos regularmente, consulta médicos por problema de saúde do qual conhece o diagnóstico, fez exame que identificou alguma doença ou lesão, esteve internado ou passou por cirurgia, <strong>deve declarar essa doença ou lesão.</strong></p>
+   <h3>Ao declarar as doenças e/ou lesões que saiba ser portador</h3>
    <ul>
-    <li>Declarar não impede a contratação. A operadora oferece cobertura total ou Cobertura Parcial Temporária (CPT).</li>
-    <li>Na CPT, por até 24 meses, ficam suspensos cirurgias, leitos de alta tecnologia e procedimentos de alta complexidade relacionados apenas à doença declarada. Consultas, exames comuns e internações clínicas seguem cobertos, cumpridas as carências.</li>
-    <li>Omitir doença conhecida pode levar à rescisão do contrato por fraude, após processo na ANS. Até a decisão, o atendimento não pode ser suspenso.</li>
-    <li>CPT não é carência. Redução de carência não cobre doença preexistente.</li>
+    <li>A operadora não poderá impedi-lo de contratar o plano. Caso isso ocorra, encaminhe a denúncia à ANS.</li>
+    <li>A operadora deverá oferecer cobertura total ou Cobertura Parcial Temporária (CPT), podendo ainda oferecer o Agravo, um acréscimo na mensalidade para usar toda a cobertura contratada após os prazos de carência.</li>
+    <li>Na CPT, há restrição de cobertura para cirurgias, leitos de alta tecnologia (UTI, unidade coronariana ou neonatal) e procedimentos de alta complexidade (tomografia, ressonância etc.) exclusivamente relacionados à doença ou lesão declarada, por até 24 meses contados da assinatura do contrato. Depois disso, a cobertura passa a ser integral.</li>
+    <li>Não há restrição para consultas, internações não cirúrgicas, exames e procedimentos que não sejam de alta complexidade, mesmo relacionados à doença declarada, cumpridas as carências.</li>
+    <li>A operadora não poderá alegar depois omissão de informação para essa doença ou lesão.</li>
    </ul>
-   <p>Você tem direito a orientação gratuita de um médico credenciado para preencher. Dúvidas: Disque ANS 0800 701 9656.</p>
+   <h3>Ao não declarar as doenças e/ou lesões que saiba ser portador</h3>
+   <ul>
+    <li>A operadora poderá suspeitar de omissão e deverá comunicar imediatamente ao beneficiário, podendo oferecer CPT ou abrir processo administrativo junto à ANS.</li>
+    <li>Comprovada a omissão, a operadora poderá rescindir o contrato por fraude e responsabilizá-lo pelos procedimentos referentes à doença ou lesão não declarada.</li>
+    <li>Até o julgamento final do processo pela ANS, não poderá ocorrer suspensão do atendimento nem rescisão do contrato. Caso isso ocorra, encaminhe a denúncia à ANS.</li>
+   </ul>
+   <p class="attn"><strong>Atenção:</strong> se a operadora oferecer redução ou isenção de carência, isso não significa cobertura para as doenças ou lesões que o beneficiário saiba ter no momento da assinatura. Cobertura Parcial Temporária não é carência. Não deixe de informar se possui alguma doença ou lesão.</p>
+   <p>Lista completa de procedimentos de alta complexidade: Rol de Procedimentos e Eventos em Saúde, em gov.br/ans. Dúvidas: Disque ANS 0800 701 9656.</p>
   </div></details>
-  <div class="field-block" id="w-ciencia" style="margin-top:14px"><label class="check"><input type="checkbox" id="ciencia" ${S.ciencia?"checked":""}><span>Li a Carta de Orientação ao Beneficiário</span></label><span class="msg" id="m-ciencia"></span></div>
+  <div class="field-block" id="w-ciencia" style="margin-top:14px"><label class="check ${S.cartaFim?"":"locked"}" id="cienciaLbl"><input type="checkbox" id="ciencia" ${S.ciencia?"checked":""} ${S.cartaFim?"":"disabled"}><span>Li a Carta de Orientação ao Beneficiário</span></label>
+   <p class="lock-hint" id="lockHint" ${S.cartaFim?"hidden":""}>Role a carta até o fim para liberar a confirmação.</p><span class="msg" id="m-ciencia"></span></div>
  </div>
 </div>`}
 
@@ -461,12 +492,12 @@ function showEmpErr(f,final){const m=document.getElementById("em-"+f);if(!m)retu
 function v2(){const n=S.people.length,cls=(n>3?"stacked ":"")+(n===1?"single":"");return `<div class="sheet ${cls}">
  <div class="sec"><h1>Questionário de saúde</h1><p class="hint">Ao responder Sim, você detalha na próxima etapa.</p></div>
  <div class="progress" aria-live="polite"><span><b id="pc">0</b> de 26</span><div class="track"><div class="fill" id="pf"></div></div></div>
- ${n>1?`<div class="qhead"><span></span><span>Pergunta</span><div class="cols">${S.people.map(p=>`<span title="${esc(p.nome)}">${esc(shortName(p))}</span>`).join("")}</div></div>`:""}
+ ${n>1?`<div class="qhead"><span></span><span>Pergunta</span><div class="cols">${S.people.map(p=>`<span title="${esc(p.nome)}"><small>${p.titular?"Titular":"Dependente "+S.people.indexOf(p)}</small>${esc(shortName(p))}</span>`).join("")}</div></div>`:""}
  ${QUESTIONS.map((t,i)=>qRow(i+1,t)).join("")}
 </div>`}
 function qRow(q,t){return `<div class="qrow" id="q-${q}">
  <span class="qn">${q}</span><span class="qt">${esc(t)}</span>
- <div class="ctrls">${S.people.map(p=>`<div class="pc"><span class="pname">${esc(shortName(p))}</span>
+ <div class="ctrls">${S.people.map(p=>`<div class="pc"><span class="pname"><b>${esc(shortName(p))}</b> · ${p.titular?"Titular":"Dependente "+S.people.indexOf(p)}</span>
   <span class="seg" role="group" aria-label="Pergunta ${q}, ${esc(shortName(p))}">${["S","N"].map(v=>`<button type="button" data-v="${v}" data-p="${p.id}" data-q="${q}" aria-pressed="${ans(p,q)===v}">${v==="S"?"Sim":"Não"}</button>`).join("")}</span></div>`).join("")}</div>
  <span class="msg qmsg" id="qm-${q}"></span>
  ${q===3?`<div id="q3alerts" style="display:contents"></div>`:""}</div>`}
@@ -538,6 +569,15 @@ function clinBlock(){const c=S.clin;
   </div>`:""}`}
 function clinErrs(){const c=S.clin;return {cnome:c.nome.trim()?"":"Obrigatório.",ccontato:c.contato.trim()?"":"Obrigatório.",ctel:digits(c.tel).length>=10?"":(c.tel.trim()?"Inclua o DDD.":"Obrigatório.")}}
 function showClinErrs(){const r=clinErrs();Object.keys(r).forEach(k=>{const m=document.getElementById("m-"+k),w=document.getElementById("w-"+k);if(m)m.textContent=r[k];if(w)w.classList.toggle("bad",!!r[k])});return Object.values(r).some(Boolean)}
+
+/* carta: abre sozinha e libera a confirmação só no fim da leitura */
+function cartaCheck(){const b=document.getElementById("cartaBody");if(!b||S.cartaFim)return;
+  if(b.scrollTop+b.clientHeight>=b.scrollHeight-12){S.cartaFim=true;const cb=document.getElementById("ciencia"),lb=document.getElementById("cienciaLbl"),h=document.getElementById("lockHint");
+    if(cb)cb.disabled=false;if(lb)lb.classList.remove("locked");if(h)h.hidden=true;const m=document.getElementById("m-ciencia");if(m&&m.textContent)showStepErrs(0)}}
+function setupCarta(animate){const d=document.getElementById("carta"),b=document.getElementById("cartaBody");if(!d||!b)return;
+  b.addEventListener("scroll",cartaCheck,{passive:true});d.addEventListener("toggle",()=>{if(d.open)setTimeout(cartaCheck,50)});
+  const open=()=>{if(animate&&!REDUCE)d.classList.add("auto");d.open=true;setTimeout(cartaCheck,800)};
+  if(animate&&!REDUCE)setTimeout(open,450);else open()}
 
 /* registro no servidor */
 async function api(action,body){
@@ -667,6 +707,7 @@ $("#next").addEventListener("click",()=>{if(busy)return;
   navigate(1,()=>{S.step++})});
 $("#back").addEventListener("click",()=>{if(S.step>0&&!busy)navigate(-1,()=>{S.step--})});
 $("#form").addEventListener("submit",ev=>ev.preventDefault());
+window.addEventListener("beforeunload",ev=>{if(S.lgpdOk&&!S.sent){ev.preventDefault();ev.returnValue="";return ""}});
 render(1);
 })();
 </script>
