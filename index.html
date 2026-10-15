@@ -195,6 +195,27 @@ tr:last-child td{border-bottom:0}
 .status{font-size:.88rem;border-radius:6px;padding:10px 12px;background:var(--ok-bg);color:var(--ok)}
 .status:empty{display:none}
 .status.err{background:var(--err-bg);color:var(--err)}
+/* assinatura e documentos */
+.sig-wrap{display:flex;flex-direction:column;gap:8px}
+.sig-box{position:relative;border:1px dashed var(--field);border-radius:8px;background:var(--soft);touch-action:none;overflow:hidden;transition:border-color var(--d-fast) ease,background-color var(--d-fast) ease}
+.sig-box.active{border-style:solid;border-color:var(--brand);background:var(--sheet)}
+.bad .sig-box{border-color:var(--err)}
+.sig-box canvas{display:block;width:100%;height:170px;cursor:crosshair;touch-action:none}
+.sig-box .sig-ph{position:absolute;left:0;right:0;bottom:34px;margin:0 18px;border-top:1px solid var(--field);pointer-events:none}
+.sig-box .sig-ph span{position:absolute;left:0;top:6px;font-size:.78rem;color:var(--faint)}
+.sig-box.drawn .sig-ph span{display:none}
+.sig-done{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:var(--sheet)}
+.sig-done img{max-height:70px;max-width:60%;object-fit:contain}
+.sig-tools{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:.82rem;color:var(--muted)}
+.docs{display:flex;flex-direction:column;gap:8px;margin:0;padding:0;list-style:none}
+.docs li{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:var(--sheet);animation:popIn var(--d-in) var(--ease-out) both}
+.docs .thumb{width:46px;height:46px;border-radius:5px;object-fit:cover;flex:none;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--title)}
+.docs .dn{flex:1;min-width:0;font-size:.88rem}
+.docs .dn b{display:block;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.docs .dn span{color:var(--muted);font-size:.78rem}
+.doc-add{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn.small{height:38px;padding:0 16px;font-size:.88rem}
+.doc-busy{font-size:.82rem;color:var(--muted)}
 .foot{color:var(--faint);font-size:.75rem;text-align:center;padding:18px 0 22px}
 /* revisão */
 .rv-meta{margin:-6px 0 12px;color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
@@ -328,10 +349,11 @@ const CPT_TXT="Havendo a informação de doença(s) ou lesão(ões) preexistente
 const MAXDEP=7;
 const EMPRESA="Amazon Copy";
 const API="https://ornzjesebcztlsatwbaq.supabase.co/functions/v1/declaracao-saude";
-const FORM_VERSAO="1.1";
+const FORM_VERSAO="1.2";
+const MAX_DOCS=4,MAX_PDF=4*1024*1024,MAX_DOCS_TOTAL=9*1024*1024;
 let uid=0;
 const newPerson=t=>({id:"p"+(++uid),titular:t,nome:"",cpf:"",nasc:"",sexo:"",parent:"",peso:"",altura:""});
-const fresh=()=>({welcome:true,lgpd:false,lgpdOk:false,lgpdAt:"",step:0,ciencia:false,cartaFim:false,emp:{nome:EMPRESA,tel:"",email:""},clin:{resp:"",nome:"",esp:"",contato:"",tel:"",sent:false},inicio:new Date().toISOString(),people:[newPerson(true)],ans:{},det:{},local:"Manaus",verdade:false,sent:null,touched:{}});
+const fresh=()=>({welcome:true,lgpd:false,lgpdOk:false,lgpdAt:"",step:0,ciencia:false,cartaFim:false,emp:{nome:EMPRESA,tel:"",email:""},clin:{resp:"",nome:"",esp:"",contato:"",tel:"",sent:false},inicio:new Date().toISOString(),people:[newPerson(true)],ans:{},det:{},local:"Manaus",verdade:false,sent:null,touched:{},assin:"",assinAt:"",docs:[]});
 let S=fresh();
 const REDUCE=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 let busy=false;
@@ -391,7 +413,7 @@ function detErr(p,q,final){const d=S.det[dkey(p,q)]||{},r={ano:"",desc:""},y=Str
   const t=String(d.desc||"").trim();if(!t)r.desc=final?"Obrigatório.":"";else if(t.length<5&&final)r.desc="Detalhe um pouco mais.";return r}
 function stepErrs(step){const r={};
   if(step===0){r.ciencia=S.ciencia?"":(S.cartaFim?"Confirme a leitura da carta.":"Role a carta até o fim e confirme a leitura.")}
-  if(step===4){r.verdade=S.verdade?"":"Marque para concluir.";r.local=S.local.trim()?"":"Obrigatório."}
+  if(step===4){r.verdade=S.verdade?"":"Marque para concluir.";r.local=S.local.trim()?"":"Obrigatório.";r.assin=S.assin?"":"Assine no quadro acima.";if(S.people.length>1)r.docs=S.docs.length?"":"Anexe o RG ou a CNH do titular."}
   return r}
 function showStepErrs(step){if(!S.tried||!S.tried[step])return;const r=stepErrs(step);
   Object.keys(r).forEach(k=>{const m=document.getElementById("m-"+k),w=document.getElementById("w-"+k);if(m)m.textContent=r[k];if(w)w.classList.toggle("bad",!!r[k])})}
@@ -401,7 +423,7 @@ function validate(step){const e=[];
     S.people.forEach(p=>{if(personFields(p).some(f=>fieldErr(p,f,true)))e.push("Corrija os dados do "+label(p).toLowerCase()+".")})}
   if(step===2){const m=[];for(let q=1;q<=26;q++)if(S.people.some(p=>!ans(p,q)))m.push(q);if(m.length)e.push(m.length===1?"Falta a pergunta "+m[0]+".":"Faltam "+m.length+" perguntas: "+m.join(", ")+".")}
   if(step===3)if(yesList().some(({p,q})=>{const r=detErr(p,q,true);return r.ano||r.desc}))e.push("Preencha ano e descrição de todas as respostas Sim.");
-  if(step===4){if(!S.verdade)e.push("Marque a declaração para concluir.");if(!S.local.trim())e.push("Informe o local.")}
+  if(step===4){if(S.people.length>1&&!S.docs.length)e.push("Anexe o documento do responsável.");if(!S.verdade)e.push("Marque a declaração para concluir.");if(!S.local.trim())e.push("Informe o local.");if(!S.assin)e.push("Assine a declaração.")}
   return e}
 
 /* telas */
@@ -422,7 +444,8 @@ function render(dir){document.body.classList.toggle("welcome",!!S.welcome);docum
   if(dir)animateIn(dir);showStepErrs(S.step);
   if(!S.sent&&S.step===0)setupCarta(!!dir);
   if(!S.sent&&S.step===1){S.people.forEach(updDerived);EMPF.forEach(f=>showEmpErr(f,!!S.touched["emp"+f]))}
-  if(!S.sent&&S.step===2)updProgress()}
+  if(!S.sent&&S.step===2)updProgress();
+  if(!S.sent&&S.step===4)setupSig()}
 
 function vWelcome(){return `<div class="splash" role="status" aria-label="Carregando a Declaração de Saúde"><img src="${LOGO}" alt="Vida e Saúde"><h1>Declaração de Saúde</h1></div>`}
 let splashTimer=null;
@@ -549,7 +572,80 @@ function v4(){const ppl=S.people,list=yesList(),e=S.emp;return `<div class="shee
    <label class="f" id="w-local">Local<input type="text" id="local" value="${esc(S.local)}"><span class="msg" id="m-local"></span></label>
    <label class="f">Data<input type="text" value="${new Date().toLocaleDateString("pt-BR")}" readonly></label>
   </div></div>
+ ${ppl.length>1?`<div class="sec" id="docSec">${docBlock()}</div>`:""}
+ <div class="sec" id="sigSec">${sigBlock()}</div>
 </div>`}
+function docBlock(){const d=S.docs,tot=d.reduce((a,x)=>a+x.size,0);return `<h2>Documento do responsável</h2>
+ <p class="hint" style="margin-bottom:14px">RG ou CNH do titular, responsável pelos dependentes. Envie frente e verso, em foto ou PDF.</p>
+ <div class="field-block" id="w-docs">
+  ${d.length?`<ul class="docs">${d.map((x,i)=>`<li>${x.thumb?`<img class="thumb" src="${x.thumb}" alt="">`:`<span class="thumb">PDF</span>`}<span class="dn"><b>${esc(x.nome)}</b><span>${fmtSize(x.size)}</span></span><button type="button" class="link danger" data-rmdoc="${i}">Remover</button></li>`).join("")}</ul>`:""}
+  ${d.length<MAX_DOCS?`<div class="doc-add"><button type="button" class="btn ghost small" id="docAdd">${d.length?"Adicionar outro arquivo":"Anexar documento"}</button><span class="doc-busy" id="docBusy"></span></div>`:""}
+  <span class="msg" id="m-docs"></span>
+ </div>
+ <input type="file" id="docInput" accept="image/*,application/pdf" multiple hidden>`}
+function sigBlock(){return `<h2>Assinatura do titular</h2>
+ <div class="field-block sig-wrap" id="w-assin">
+  ${S.assin?`<div class="sig-done"><img src="${S.assin}" alt="Assinatura"><button type="button" class="link" id="sigRedo">Assinar de novo</button></div>`
+  :`<p class="hint" style="margin:0 0 6px">Assine com o dedo ou o mouse dentro do quadro.</p>
+  <div class="sig-box" id="sigBox"><canvas id="sig" aria-label="Quadro de assinatura"></canvas><div class="sig-ph"><span>Assinatura de ${esc(S.people[0].nome||"titular")}</span></div></div>
+  <div class="sig-tools"><span id="sigState"></span><button type="button" class="link" id="sigClear">Limpar</button></div>`}
+  <span class="msg" id="m-assin"></span>
+ </div>`}
+const fmtSize=n=>n>=1048576?(n/1048576).toFixed(1).replace(".",",")+" MB":Math.max(1,Math.round(n/1024))+" KB";
+
+/* assinatura desenhada */
+let sigPad=null;
+function setupSig(){const c=document.getElementById("sig"),box=document.getElementById("sigBox");sigPad=null;if(!c||!box)return;
+  const dpr=Math.min(2,window.devicePixelRatio||1),w=box.clientWidth,h=170;c.width=Math.round(w*dpr);c.height=Math.round(h*dpr);
+  const x=c.getContext("2d");x.setTransform(dpr,0,0,dpr,0,0);x.lineCap="round";x.lineJoin="round";x.strokeStyle="#1F1A2E";
+  const st={len:0,minX:1e9,minY:1e9,maxX:-1e9,maxY:-1e9,down:false,pts:[]};sigPad={c,st,dpr};
+  const pos=e=>{const r=c.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top,p:e.pressure||.5}};
+  const grow=p=>{st.minX=Math.min(st.minX,p.x);st.minY=Math.min(st.minY,p.y);st.maxX=Math.max(st.maxX,p.x);st.maxY=Math.max(st.maxY,p.y)};
+  c.addEventListener("pointerdown",e=>{e.preventDefault();c.setPointerCapture(e.pointerId);st.down=true;const p=pos(e);st.pts=[p];grow(p);box.classList.add("active","drawn");
+    x.beginPath();x.lineWidth=2.4;x.arc(p.x,p.y,1.1,0,Math.PI*2);x.fillStyle="#1F1A2E";x.fill()});
+  c.addEventListener("pointermove",e=>{if(!st.down)return;e.preventDefault();const p=pos(e),pts=st.pts,l=pts[pts.length-1];
+    const d=Math.hypot(p.x-l.x,p.y-l.y);if(d<1.2)return;st.len+=d;grow(p);pts.push(p);
+    if(pts.length>=3){const a=pts[pts.length-3],b=pts[pts.length-2],m1={x:(a.x+b.x)/2,y:(a.y+b.y)/2},m2={x:(b.x+p.x)/2,y:(b.y+p.y)/2};
+      x.beginPath();x.lineWidth=Math.max(1.6,Math.min(3,3.2-d*.08));x.moveTo(m1.x,m1.y);x.quadraticCurveTo(b.x,b.y,m2.x,m2.y);x.stroke()}
+    else{x.beginPath();x.lineWidth=2.4;x.moveTo(l.x,l.y);x.lineTo(p.x,p.y);x.stroke()}});
+  const end=e=>{if(!st.down)return;st.down=false;box.classList.remove("active");sigExport()};
+  c.addEventListener("pointerup",end);c.addEventListener("pointercancel",end);c.addEventListener("lostpointercapture",end)}
+function sigExport(){if(!sigPad)return;const {c,st,dpr}=sigPad,ok=st.len>=40&&(st.maxX-st.minX)>=24;
+  const se=document.getElementById("sigState");
+  if(!ok){S.assin="";if(se)se.textContent=st.len>0?"Assinatura muito curta. Assine por completo.":"";return}
+  const pad=10,sx=Math.max(0,Math.floor((st.minX-pad)*dpr)),sy=Math.max(0,Math.floor((st.minY-pad)*dpr)),
+    sw=Math.min(c.width-sx,Math.ceil((st.maxX-st.minX+pad*2)*dpr)),sh=Math.min(c.height-sy,Math.ceil((st.maxY-st.minY+pad*2)*dpr));
+  const k=Math.min(1,700/sw),o=document.createElement("canvas");o.width=Math.max(1,Math.round(sw*k));o.height=Math.max(1,Math.round(sh*k));
+  o.getContext("2d").drawImage(c,sx,sy,sw,sh,0,0,o.width,o.height);
+  S.assin=o.toDataURL("image/png");S.assinAt=new Date().toISOString();if(se)se.textContent="Assinatura registrada.";
+  if(S.tried&&S.tried[4])showStepErrs(4)}
+function sigClear(){S.assin="";S.assinAt="";const sec=document.getElementById("sigSec");if(sec){sec.innerHTML=sigBlock();setupSig();if(S.tried&&S.tried[4])showStepErrs(4)}}
+
+/* documento do responsável */
+const readB64=f=>new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>ok(String(r.result).split(",")[1]);r.onerror=no;r.readAsDataURL(f)});
+async function loadImg(f){
+  if(window.createImageBitmap){try{return await createImageBitmap(f,{imageOrientation:"from-image"})}catch(e){}}
+  return await new Promise((ok,no)=>{const u=URL.createObjectURL(f),im=new Image();im.onload=()=>{ok(im)};im.onerror=()=>{URL.revokeObjectURL(u);no(new Error("img"))};im.src=u})}
+async function compressImg(f){const im=await loadImg(f),W=im.width,H=im.height;if(!W||!H)throw new Error("img");
+  const k=Math.min(1,1800/Math.max(W,H)),c=document.createElement("canvas");c.width=Math.round(W*k);c.height=Math.round(H*k);
+  const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);
+  const data=c.toDataURL("image/jpeg",.82),t=document.createElement("canvas"),tk=96/Math.max(c.width,c.height);
+  t.width=Math.round(c.width*tk);t.height=Math.round(c.height*tk);t.getContext("2d").drawImage(c,0,0,t.width,t.height);
+  const b64=data.split(",")[1];return {b64,size:Math.round(b64.length*3/4),thumb:t.toDataURL("image/jpeg",.7)}}
+async function addDocs(files){const m=document.getElementById("m-docs"),busyEl=document.getElementById("docBusy");let err="";
+  if(busyEl)busyEl.textContent="Processando…";
+  for(const f of files){if(S.docs.length>=MAX_DOCS){err="Limite de "+MAX_DOCS+" arquivos.";break}
+    const isPdf=f.type==="application/pdf"||/\.pdf$/i.test(f.name),isImg=f.type.startsWith("image/")||/\.(jpe?g|png|heic|heif|webp)$/i.test(f.name);
+    try{let item;
+      if(isPdf){if(f.size>MAX_PDF){err="PDF acima de 4 MB. Envie um arquivo menor ou uma foto.";continue}
+        item={nome:f.name,mime:"application/pdf",b64:await readB64(f),size:f.size,thumb:""}}
+      else if(isImg){const r=await compressImg(f);item={nome:f.name.replace(/\.[^.]+$/,"")+".jpg",mime:"image/jpeg",b64:r.b64,size:r.size,thumb:r.thumb}}
+      else{err="Formato não aceito. Envie foto (JPG ou PNG) ou PDF.";continue}
+      if(S.docs.reduce((a,x)=>a+x.size,0)+item.size>MAX_DOCS_TOTAL){err="Os arquivos passaram de 9 MB no total.";continue}
+      S.docs.push(item)}catch(e){err="Não foi possível ler "+f.name+". Envie em JPG, PNG ou PDF."}}
+  const sec=document.getElementById("docSec");if(sec)sec.innerHTML=docBlock();
+  if(S.tried&&S.tried[4])showStepErrs(4);
+  const m2=document.getElementById("m-docs"),w=document.getElementById("w-docs");if(err&&m2){m2.textContent=err;w.classList.add("bad")}}
 
 function vDone(){const s=S.sent,c=S.clin;return `<div class="sheet">
  <div class="sec"><svg class="okmark" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="22"/><path d="M13 22.5l6 6 12-13"/></svg><h1>Declaração registrada</h1><p class="proto">${esc(s.proto)}</p><p class="hint">Número de protocolo</p></div>
@@ -588,8 +684,8 @@ function setupCarta(animate){const d=document.getElementById("carta"),b=document
   if(animate&&!REDUCE)setTimeout(open,450);else open()}
 
 /* registro no servidor */
-async function api(action,body){
-  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),20000);
+async function api(action,body,ms){
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),ms||20000);
   try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...body}),signal:ctl.signal});
     const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||("HTTP "+r.status));return j}
   finally{clearTimeout(t)}}
@@ -600,7 +696,7 @@ function buildPayload(){
       peso_kg:num(p.peso),altura_m:num(p.altura),imc:isNaN(imc(p))?null:Math.round(imc(p)*10)/10,
       respostas:QUESTIONS.map((_,q)=>ans(p,q+1)||null)})),
     detalhes:yesList().map(({p,q})=>{const d=S.det[dkey(p,q)]||{};return {pergunta:q,pessoa:S.people.indexOf(p),ano:+d.ano,descricao:String(d.desc||"").trim()}}),
-    aceites:{lgpd_em:S.lgpdAt,carta_orientacao:!!S.ciencia,veracidade:!!S.verdade},
+    aceites:{lgpd_em:S.lgpdAt,carta_orientacao:!!S.ciencia,veracidade:!!S.verdade,assinatura_em:S.assinAt||null},
     local:S.local.trim(),
     cliente:{inicio_em:S.inicio,concluido_em:new Date().toISOString(),fuso:Intl.DateTimeFormat().resolvedOptions().timeZone||"",tela:screen.width+"x"+screen.height}}}
 const fmtServer=iso=>{const d=new Date(iso);return d.toLocaleDateString("pt-BR",{timeZone:"America/Manaus"})+" às "+d.toLocaleTimeString("pt-BR",{timeZone:"America/Manaus",hour:"2-digit",minute:"2-digit"})};
@@ -642,12 +738,15 @@ function gerarPDF(){const lib=window.jspdf;if(!lib||!lib.jsPDF||!lib.jsPDF.API.a
   para(CPT_TXT,7.5,MUT);y+=2;
   sec("Declaração do proponente titular");y+=2;
   para(VERDADE,8.5);para("Ciência da Carta de Orientação ao Beneficiário: confirmada.",8.5);para("Concordância com o tratamento de dados pessoais, nos termos da LGPD (Lei nº 13.709/2018), para avaliação da adesão ao plano: confirmada em "+fmtServer(S.lgpdAt)+".",8.5);y+=2;
-  if(y>262){doc.addPage();y=18}
-  doc.setFillColor(...SOFT).setDrawColor(...LINE).roundedRect(M,y,W-2*M,20,1.5,1.5,"FD");
-  doc.setFont("helvetica","normal").setFontSize(8).setTextColor(...MUT).text("Registro eletrônico do proponente titular",M+4,y+5.5);
-  doc.setFont("helvetica","bold").setFontSize(9.5).setTextColor(...INK).text(ppl[0].nome+"  ·  CPF "+ppl[0].cpf,M+4,y+11);
-  doc.setFont("helvetica","normal").setFontSize(8.5).text(s.local+" · registrada em "+s.when+" (horário do servidor) · Protocolo "+s.proto,M+4,y+16);
-  y+=24;doc.setFont("courier","normal").setFontSize(7).setTextColor(...MUT).text("Código de verificação (SHA-256): "+(s.hash||""),M,y);
+  if(s.ndocs)para("Documento do responsável (RG ou CNH do titular): "+s.ndocs+(s.ndocs>1?" arquivos anexados":" arquivo anexado")+" e guardados com a declaração.",8.5);
+  if(y>240){doc.addPage();y=18}
+  doc.setFillColor(...SOFT).setDrawColor(...LINE).roundedRect(M,y,W-2*M,40,1.5,1.5,"FD");
+  doc.setFont("helvetica","normal").setFontSize(8).setTextColor(...MUT).text("Assinatura do proponente titular",M+4,y+5.5);
+  if(s.assin){try{const p=doc.getImageProperties(s.assin),bw=70,bh=18,k=Math.min(bw/p.width,bh/p.height);doc.addImage(s.assin,"PNG",M+4,y+8,p.width*k,p.height*k)}catch(e){}}
+  doc.setDrawColor(...MUT).setLineWidth(.2).line(M+4,y+27,M+90,y+27);
+  doc.setFont("helvetica","bold").setFontSize(9.5).setTextColor(...INK).text(ppl[0].nome+"  ·  CPF "+ppl[0].cpf,M+4,y+31.5);
+  doc.setFont("helvetica","normal").setFontSize(8.5).text(s.local+" · registrada em "+s.when+" (horário do servidor) · Protocolo "+s.proto,M+4,y+36.5);
+  y+=44;doc.setFont("courier","normal").setFontSize(7).setTextColor(...MUT).text("Código de verificação (SHA-256): "+(s.hash||""),M,y);
   const n=doc.getNumberOfPages();
   for(let i=1;i<=n;i++){doc.setPage(i);doc.setDrawColor(...LINE).setLineWidth(.3).line(M,284,W-M,284);doc.setFont("helvetica","normal").setFontSize(7.5).setTextColor(...MUT);
     doc.text("Vida e Saúde · ANS nº 42.477-3 · Declaração de Saúde · "+ppl[0].nome,M,288.5);doc.text("Protocolo "+s.proto+" · Página "+i+" de "+n,W-M,288.5,{align:"right"})}
@@ -663,6 +762,7 @@ view.addEventListener("input",ev=>{const t=ev.target;
   if(t.dataset.d){const k=t.dataset.k;S.det[k]=S.det[k]||{};if(t.dataset.d==="ano")t.value=digits(t.value).slice(0,4);S.det[k][t.dataset.d]=t.value;showDetErr(k,false);return}
   if(t.id==="local")S.local=t.value;showStepErrs(S.step)});
 view.addEventListener("change",ev=>{const t=ev.target;
+  if(t.id==="docInput"){const fs=[...(t.files||[])];t.value="";if(fs.length)addDocs(fs);return}
   if(t.dataset.f){const p=S.people.find(x=>x.id===t.dataset.p);if(p){p[t.dataset.f]=t.value;S.touched[p.id+t.dataset.f]=true;updDerived(p)}}
   if(t.id==="lgpd"){S.lgpd=t.checked;if(t.checked){document.getElementById("m-lgpd").textContent="";document.getElementById("w-lgpd").classList.remove("bad")}}if(t.id==="ciencia")S.ciencia=t.checked;if(t.id==="verdade")S.verdade=t.checked;
   showStepErrs(S.step)});
@@ -671,6 +771,9 @@ view.addEventListener("focusout",ev=>{const t=ev.target;
   if(t.dataset.e){S.touched["emp"+t.dataset.e]=true;showEmpErr(t.dataset.e,true)}
   if(t.dataset.d)showDetErr(t.dataset.k,true)});
 view.addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b)return;
+  if(b.id==="docAdd"){const i=document.getElementById("docInput");if(i)i.click();return}
+  if(b.dataset.rmdoc!=null){S.docs.splice(+b.dataset.rmdoc,1);const sec=document.getElementById("docSec");if(sec)sec.innerHTML=docBlock();if(S.tried&&S.tried[4])showStepErrs(4);return}
+  if(b.id==="sigClear"||b.id==="sigRedo"){sigClear();return}
   if(b.dataset.q){const p=b.dataset.p,q=+b.dataset.q;S.ans[p]=S.ans[p]||{};S.ans[p][q]=b.dataset.v;
     b.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
     const r=document.getElementById("q-"+q);if(r&&S.people.every(pp=>ans(pp,q))){r.classList.remove("missing");const qm=document.getElementById("qm-"+q);if(qm)qm.textContent=""}
@@ -706,11 +809,11 @@ $("#next").addEventListener("click",()=>{if(busy)return;
     const old=document.getElementById("errsum");if(old)old.remove();
     const n=view.querySelectorAll(".bad,.qrow.missing").length;
     const box=errBox();box.textContent=n>1?"Há "+n+" campos para corrigir. Eles estão destacados abaixo.":n===1?"Há 1 campo para corrigir. Ele está destacado abaixo.":errs[0];
-    const bad=view.querySelector(".bad input,.bad select,.bad textarea,.qrow.missing,.field-block.bad input");
-    (bad||box).scrollIntoView({block:"center",behavior:REDUCE?"auto":"smooth"});if(bad&&bad.focus)bad.focus({preventScroll:true});return}
+    const bad=view.querySelector(".bad input:not([type=file]),.bad select,.bad textarea,.qrow.missing,.field-block.bad");
+    (bad||box).scrollIntoView({block:"center",behavior:REDUCE?"auto":"smooth"});if(bad&&/^(INPUT|SELECT|TEXTAREA)$/.test(bad.tagName))bad.focus({preventScroll:true});return}
   if(S.step===4){const nb=$("#next"),old=document.getElementById("errsum");if(old)old.remove();busy=true;setBusyBtn(nb,true,"Registrando");
-    api("registrar",{payload:buildPayload()}).then(r=>{busy=false;nb.disabled=false;nb.classList.remove("loading");
-      navigate(1,()=>{S.sent={proto:r.protocolo,hash:r.hash,token:r.token,at:r.registrado_em,when:fmtServer(r.registrado_em),titular:S.people[0].nome,emp:S.emp.nome,n:S.people.length,local:S.local}})})
+    api("registrar",{payload:buildPayload(),anexos:{assinatura:S.assin,documentos:S.people.length>1?S.docs.map(d=>({nome:d.nome,mime:d.mime,base64:d.b64})):[]}},90000).then(r=>{busy=false;nb.disabled=false;nb.classList.remove("loading");
+      navigate(1,()=>{S.sent={proto:r.protocolo,hash:r.hash,token:r.token,at:r.registrado_em,when:fmtServer(r.registrado_em),titular:S.people[0].nome,emp:S.emp.nome,n:S.people.length,local:S.local,assin:S.assin,ndocs:S.people.length>1?S.docs.length:0};S.docs=[]})})
     .catch(()=>{busy=false;setBusyBtn(nb,false,"Concluir");const box=errBox();box.textContent="Não foi possível registrar sua declaração. Verifique sua conexão e tente de novo.";box.scrollIntoView({block:"center",behavior:REDUCE?"auto":"smooth"})});return}
   navigate(1,()=>{S.step++})});
 $("#back").addEventListener("click",()=>{if(S.step>0&&!busy)navigate(-1,()=>{S.step--})});
