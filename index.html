@@ -184,6 +184,24 @@ tr:last-child td{border-bottom:0}
 .status:empty{display:none}
 .status.err{background:var(--err-bg);color:var(--err)}
 .foot{color:var(--faint);font-size:.75rem;text-align:center;padding:18px 0 22px}
+/* revisão */
+.rv-meta{margin:-6px 0 12px;color:var(--muted);font-size:.9rem;font-variant-numeric:tabular-nums}
+.rv-yes{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.rv-yes li{border-left:3px solid var(--brand);padding:2px 0 2px 12px;display:flex;flex-direction:column;gap:2px;font-size:.9rem}
+.rv-yes b{font-weight:600;color:var(--ink)}
+.rv-yes span{color:var(--muted)}
+.rv-none{margin:0;color:var(--muted);font-size:.92rem}
+.letter .tablebox table td:first-child{min-width:200px}
+.proto{overflow-wrap:anywhere}
+#pdfBtn,#clinBtn{margin-left:0}
+details.letter.all summary::after{content:"Abrir"}
+details.letter.all[open] summary::after{content:"Fechar"}
+@media (max-width:420px){.proto{font-size:1.2rem}}
+
+/* indicação de clínica */
+.clin-q{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.clin-q .qt{flex:1 1 260px;min-width:0}
+
 /* privacidade */
 body.privacy .steps,body.privacy .steplbl{display:none}
 body.privacy main{padding-top:24px}
@@ -219,10 +237,9 @@ body.welcome .top,body.welcome .steps,body.welcome .steplbl,body.welcome .action
 .sheet.out-l,.sheet.out-r{transition:opacity var(--d-out) var(--ease-in),transform var(--d-out) var(--ease-in);opacity:0;pointer-events:none}
 .sheet.out-l{transform:translateX(-12px)}
 .sheet.out-r{transform:translateX(12px)}
-.sec.pop{animation:popIn var(--d-in) var(--ease-out) both}
+.sec.pop,.pop-in{animation:popIn var(--d-in) var(--ease-out) both}
 .sec.fade-out{transition:opacity var(--d-out) var(--ease-in),transform var(--d-out) var(--ease-in);opacity:0;transform:translateY(-6px)}
 .msg:not(:empty),.alert,.errsum{animation:fadeUp var(--d-base) var(--ease-out) both}
-#medbox:not([hidden]){animation:fadeUp var(--d-base) var(--ease-out) both}
 details.letter[open] .body{animation:fadeIn var(--d-base) var(--ease-out) both}
 .okmark{width:44px;height:44px;margin-bottom:12px}
 .okmark circle{fill:var(--ok-bg);transform-origin:center;animation:ring .45s var(--ease-out) both}
@@ -283,21 +300,20 @@ const QUESTIONS=[
 ];
 const STEPS=["Orientação","Identificação","Questionário","Detalhes","Revisão"];
 const PARENT=["Cônjuge","Companheiro(a)","Filho(a)","Enteado(a)","Irmão(ã)","Neto(a)","Sobrinho(a)","Menor sob guarda ou tutela"];
-const ORIENT_OPT=[["dispensou","Sem orientação médica"],["particular","Com meu médico particular"],["credenciado","Com médico credenciado da Vida e Saúde"]];
-const ORIENT={dispensou:"Declaro que dispensei orientação médica a mim oferecida para o preenchimento desta Declaração de Saúde por julgar-me capacitado a fazê-lo por minha própria conta, pelo que respondo integralmente.",
-  particular:"Declaro que fui orientado por meu médico particular, não credenciado da Vida e Saúde, para preenchimento desta Declaração de Saúde.",
-  credenciado:"Declaro que fui orientado para o preenchimento desta Declaração de Saúde por um médico credenciado da Vida e Saúde."};
 const VERDADE="Declaro que as informações prestadas nesta Declaração de Saúde são verdadeiras e assumo inteira responsabilidade por elas, em relação a mim e a todos os dependentes incluídos.";
 const CPT_TXT="Havendo a informação de doença(s) ou lesão(ões) preexistente(s) por parte do proponente titular e/ou de seu(s) dependente(s), poderá ser aplicada pela Operadora a Cobertura Parcial Temporária (CPT), a qual admite, por um período ininterrupto de até 24 (vinte e quatro) meses, contados a partir da data de início de vigência do benefício, a suspensão da cobertura para Procedimentos de Alta Complexidade (PAC), leitos de alta tecnologia e procedimentos cirúrgicos relacionados à(s) doença(s) ou lesão(ões) preexistente(s) declarada(s).";
 const MAXDEP=7;
+const EMPRESA="Amazon Copy";
+const API="https://ornzjesebcztlsatwbaq.supabase.co/functions/v1/declaracao-saude";
+const FORM_VERSAO="1.1";
 let uid=0;
 const newPerson=t=>({id:"p"+(++uid),titular:t,nome:"",cpf:"",nasc:"",sexo:"",parent:"",peso:"",altura:""});
-const fresh=()=>({welcome:true,lgpd:false,lgpdOk:false,lgpdAt:"",step:0,ciencia:false,orient:"",medNome:"",medCrm:"",emp:{nome:"",cnpj:"",tel:"",email:""},people:[newPerson(true)],ans:{},det:{},local:"Manaus",verdade:false,sent:null,touched:{}});
+const fresh=()=>({welcome:true,lgpd:false,lgpdOk:false,lgpdAt:"",step:0,ciencia:false,emp:{nome:EMPRESA,tel:"",email:""},clin:{resp:"",nome:"",esp:"",contato:"",tel:"",sent:false},inicio:new Date().toISOString(),people:[newPerson(true)],ans:{},det:{},local:"Manaus",verdade:false,sent:null,touched:{}});
 let S=fresh();
 const REDUCE=!!(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches);
 let busy=false;
 const hot=window.claude&&window.claude.hot;
-if(hot&&hot.data&&hot.data.S&&"lgpdOk" in hot.data.S){S=hot.data.S;uid=hot.data.uid||50}
+if(hot&&hot.data&&hot.data.S&&hot.data.S.clin){S=hot.data.S;uid=hot.data.uid||50}
 if(hot&&hot.snapshot){try{hot.snapshot(()=>({S,uid}))}catch(e){}}
 
 const $=s=>document.querySelector(s),view=$("#view");
@@ -325,7 +341,7 @@ const dupCpf=p=>{const d=digits(p.cpf);return S.people.some(o=>o!==p&&digits(o.c
 function fieldErr(p,f,final){const v=p[f];if(!String(v).trim())return final?"Obrigatório.":"";
   switch(f){
     case "nome":return v.trim().split(/\s+/).length<2?"Informe nome e sobrenome.":"";
-    case "cpf":if(digits(v).length<11)return final?"CPF incompleto.":"";if(!cpfOk(v))return "CPF inválido.";return dupCpf(p)?"CPF já informado para outro beneficiário.":"";
+    case "cpf":if(digits(v).length<11)return final?"CPF incompleto.":"";if(!cpfOk(v))return "CPF inválido.";return dupCpf(p)?"CPF já informado para outra pessoa desta declaração.":"";
     case "nasc":{const d=new Date(v+"T00:00:00");if(isNaN(d))return "Data inválida.";if(d>new Date())return "Data no futuro.";return age(v)>120?"Confira o ano.":""}
     case "peso":{const n=num(v);if(isNaN(n))return "Ex.: 72,5";return n<0.5||n>300?"Informe em kg. Ex.: 72,5":""}
     case "altura":{const n=num(v);if(isNaN(n))return "Ex.: 1,68";if(n>3)return "Informe em metros. Ex.: 1,68";return n<0.3?"Informe em metros. Ex.: 1,68":""}
@@ -338,7 +354,7 @@ function empErr(f,final){const v=String(S.emp[f]||"").trim();
     case "email":if(!v)return "";return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)?"":(final?"E-mail inválido.":"");
   }return ""}
 const personFields=p=>p.titular?["nome","cpf","nasc","sexo","peso","altura"]:["nome","cpf","nasc","sexo","parent","peso","altura"];
-const EMPF=["nome","cnpj","tel","email"];
+const EMPF=["tel","email"];
 const ans=(p,q)=>(S.ans[p.id]||{})[q];
 function yesList(){const o=[];for(let q=1;q<=26;q++)S.people.forEach(p=>{if(ans(p,q)==="S")o.push({p,q})});return o}
 const dkey=(p,q)=>p.id+"-"+q;
@@ -347,16 +363,14 @@ function detErr(p,q,final){const d=S.det[dkey(p,q)]||{},r={ano:"",desc:""},y=Str
   else if(p.nasc&&+y<new Date(p.nasc+"T00:00:00").getFullYear())r.ano="Antes do nascimento.";
   const t=String(d.desc||"").trim();if(!t)r.desc=final?"Obrigatório.":"";else if(t.length<5&&final)r.desc="Detalhe um pouco mais.";return r}
 function stepErrs(step){const r={};
-  if(step===0){r.ciencia=S.ciencia?"":"Confirme a leitura da carta.";r.orient=S.orient?"":"Escolha uma opção.";
-    const med=S.orient&&S.orient!=="dispensou";r.medNome=med&&!S.medNome.trim()?"Obrigatório.":"";r.medCrm=med&&!digits(S.medCrm)?"Obrigatório.":""}
+  if(step===0){r.ciencia=S.ciencia?"":"Confirme a leitura da carta."}
   if(step===4){r.verdade=S.verdade?"":"Marque para concluir.";r.local=S.local.trim()?"":"Obrigatório."}
   return r}
 function showStepErrs(step){if(!S.tried||!S.tried[step])return;const r=stepErrs(step);
   Object.keys(r).forEach(k=>{const m=document.getElementById("m-"+k),w=document.getElementById("w-"+k);if(m)m.textContent=r[k];if(w)w.classList.toggle("bad",!!r[k])})}
 function validate(step){const e=[];
-  if(step===0){if(!S.ciencia)e.push("Confirme a leitura da Carta de Orientação.");if(!S.orient)e.push("Escolha como a declaração está sendo preenchida.");
-    if(S.orient&&S.orient!=="dispensou"&&(!S.medNome.trim()||!digits(S.medCrm)))e.push("Informe nome e CRM do médico.")}
-  if(step===1){if(EMPF.some(f=>empErr(f,true)))e.push("Corrija os dados da empresa e contato.");
+  if(step===0){if(!S.ciencia)e.push("Confirme a leitura da Carta de Orientação.")}
+  if(step===1){if(EMPF.some(f=>empErr(f,true)))e.push("Corrija o contato do titular.");
     S.people.forEach(p=>{if(personFields(p).some(f=>fieldErr(p,f,true)))e.push("Corrija os dados do "+label(p).toLowerCase()+".")})}
   if(step===2){const m=[];for(let q=1;q<=26;q++)if(S.people.some(p=>!ans(p,q)))m.push(q);if(m.length)e.push(m.length===1?"Falta a pergunta "+m[0]+".":"Faltam "+m.length+" perguntas: "+m.join(", ")+".")}
   if(step===3)if(yesList().some(({p,q})=>{const r=detErr(p,q,true);return r.ano||r.desc}))e.push("Preencha ano e descrição de todas as respostas Sim.");
@@ -390,9 +404,9 @@ function runSplash(){clearTimeout(splashTimer);
 function vPrivacy(){return `<div class="sheet">
  <div class="sec"><h1>Privacidade dos seus dados</h1><p class="hint">Antes de começar, veja como cuidamos das suas informações.</p></div>
  <div class="sec"><ul class="priv">
-  <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M10.5 18.5h3"/></svg><div><b>Ficam no seu aparelho</b>Suas respostas não são gravadas em nenhum servidor. O documento final é gerado no seu próprio dispositivo.</div></li>
-  <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/></svg><div><b>Você decide o envio</b>A Vida e Saúde só recebe as informações quando você envia o PDF.</div></li>
-  <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg><div><b>Uso restrito</b>Usadas apenas para avaliar sua adesão ao plano. Não são vendidas nem compartilhadas com terceiros, salvo quando a lei exigir, como para a ANS.</div></li>
+  <li><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="5.5" rx="7.5" ry="3"/><path d="M4.5 5.5v13c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3v-13"/><path d="M4.5 12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3"/></svg><div><b>Registro seguro</b>Suas respostas ficam registradas no sistema da Vida e Saúde, com data e hora, para dar validade à declaração. Você também recebe uma cópia em PDF.</div></li>
+  <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="10.5" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg><div><b>Acesso restrito</b>Somente a equipe autorizada da Vida e Saúde, como a auditoria médica, consulta essas informações.</div></li>
+  <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2.5H7a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7.5z"/><path d="M14 2.5v5h5"/><path d="m9 14.5 2 2 4-4"/></svg><div><b>Uso exclusivo</b>Usadas apenas para avaliar sua adesão ao plano. Não são vendidas nem compartilhadas com terceiros, salvo quando a lei exigir, como para a ANS.</div></li>
   <li><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 4.5 5.5v6c0 4.6 3.2 8.4 7.5 10 4.3-1.6 7.5-5.4 7.5-10v-6z"/><path d="m8.8 12 2.2 2.2 4.2-4.4"/></svg><div><b>Protegidas pela LGPD</b>Tratamos seus dados conforme a Lei nº 13.709/2018. Você pode pedir acesso, correção ou exclusão a qualquer momento.</div></li>
  </ul></div>
  <div class="sec"><div class="field-block" id="w-lgpd"><label class="check"><input type="checkbox" id="lgpd" ${S.lgpd?"checked":""}><span>Li e concordo com o tratamento dos meus dados e dos meus dependentes para esta finalidade.</span></label><span class="msg" id="m-lgpd"></span></div></div>
@@ -412,21 +426,13 @@ function v0(){return `<div class="sheet">
   </div></details>
   <div class="field-block" id="w-ciencia" style="margin-top:14px"><label class="check"><input type="checkbox" id="ciencia" ${S.ciencia?"checked":""}><span>Li a Carta de Orientação ao Beneficiário</span></label><span class="msg" id="m-ciencia"></span></div>
  </div>
- <div class="sec">
-  <h2>Como você está preenchendo?</h2>
-  <div class="field-block" id="w-orient"><div class="options" role="radiogroup">${ORIENT_OPT.map(([v,t])=>`<label class="check"><input type="radio" name="orient" id="orient-${v}" value="${v}" ${S.orient===v?"checked":""}><span>${t}</span></label>`).join("")}</div><span class="msg" id="m-orient"></span></div>
-  <div class="grid" id="medbox" style="margin-top:14px" ${S.orient&&S.orient!=="dispensou"?"":"hidden"}>
-   <label class="f" id="w-medNome">Nome do médico<input type="text" id="medNome" autocomplete="off" value="${esc(S.medNome)}"><span class="msg" id="m-medNome"></span></label>
-   <label class="f" id="w-medCrm">CRM<input type="text" id="medCrm" placeholder="12345/AM" value="${esc(S.medCrm)}"><span class="msg" id="m-medCrm"></span></label>
-  </div>
- </div></div>`}
+</div>`}
 
 const efld=(f,lab,inner)=>`<label class="f" id="ew-${f}">${lab}${inner}<span class="msg" id="em-${f}"></span></label>`;
 function v1(){const e=S.emp;return `<div class="sheet">
  <div class="sec"><h1>Identificação</h1></div>
- <div class="sec"><h2>Empresa ou entidade</h2><div class="grid">
-  ${efld("nome","Nome da empresa ou entidade",`<input type="text" id="emp-nome" data-e="nome" autocomplete="organization" value="${esc(e.nome)}">`)}
-  ${efld("cnpj",`<span>CNPJ <small>opcional</small></span>`,`<input type="text" id="emp-cnpj" data-e="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" value="${esc(e.cnpj)}">`)}
+ <div class="sec"><h2>Empresa</h2><div class="grid">
+  <label class="f">Empresa contratante<input type="text" id="emp-nome" value="${esc(e.nome)}" readonly tabindex="-1"></label>
  </div></div>
  ${S.people.map(personSec).join("")}
  ${S.people.length-1<MAXDEP?`<div class="sec add"><button type="button" class="link" id="addDep">+ Adicionar dependente</button></div>`:""}
@@ -480,25 +486,23 @@ function v3(){const list=yesList();return `<div class="sheet">
 function showDetErr(k,final){const i=k.indexOf("-"),p=S.people.find(x=>x.id===k.slice(0,i));if(!p)return;const e=detErr(p,+k.slice(i+1),final);
   ["ano","desc"].forEach(f=>{const m=document.getElementById(`dm-${k}-${f}`);if(m){m.textContent=e[f];document.getElementById(`dw-${k}-${f}`).classList.toggle("bad",!!e[f])}})}
 
-const orientLine=()=>(ORIENT_OPT.find(o=>o[0]===S.orient)||["",""])[1]+(S.orient&&S.orient!=="dispensou"?" ("+S.medNome+", CRM "+S.medCrm+")":"");
 function v4(){const ppl=S.people,list=yesList(),e=S.emp;return `<div class="sheet">
  <div class="sec"><h1>Revisão</h1></div>
  <div class="sec"><dl class="kv">
-  <dt>Empresa ou entidade</dt><dd>${esc(e.nome)}${e.cnpj?" · "+esc(e.cnpj):""}</dd>
+  <dt>Empresa</dt><dd>${esc(e.nome)}</dd>
   <dt>Titular</dt><dd>${esc(ppl[0].nome)}</dd>
   <dt>Contato</dt><dd>${esc(e.tel)}${e.email?" · "+esc(e.email):""}</dd>
-  <dt>Orientação</dt><dd>${esc(orientLine())}</dd>
  </dl></div>
- <div class="sec"><div class="tablebox"><table>
+ ${ppl.map(p=>{const yes=QUESTIONS.map((t,i)=>i+1).filter(q=>ans(p,q)==="S");return `<div class="sec rv-person">
+  <div class="row-head"><h2>${esc(p.nome)}</h2><span class="tag">${p.titular?"Titular":esc(p.parent||label(p))}</span></div>
+  <p class="rv-meta">${fmt1(num(p.peso))} kg · ${fmt2(num(p.altura))} m · IMC ${fmt1(imc(p))}</p>
+  ${yes.length?`<ul class="rv-yes">${yes.map(q=>{const d=S.det[dkey(p,q)]||{};return `<li><b>${q}. ${esc(QUESTIONS[q-1])}</b><span>${esc(d.ano)} · ${esc(d.desc)}</span></li>`}).join("")}</ul>`
+    :`<p class="rv-none">Respondeu Não a todas as 26 perguntas.</p>`}
+ </div>`}).join("")}
+ <div class="sec"><details class="letter all"><summary>Ver todas as respostas</summary><div class="body" style="max-height:none;padding:0 0 4px"><div class="tablebox"><table>
   <thead><tr><th>Pergunta</th>${ppl.map(p=>`<th class="c">${esc(shortName(p))}</th>`).join("")}</tr></thead>
-  <tbody>
-   <tr><td>Peso / altura</td>${ppl.map(p=>`<td class="c">${fmt1(num(p.peso))} kg · ${fmt2(num(p.altura))} m</td>`).join("")}</tr>
-   <tr><td>IMC</td>${ppl.map(p=>`<td class="c">${fmt1(imc(p))}</td>`).join("")}</tr>
-   ${QUESTIONS.map((t,i)=>`<tr><td>${i+1}. ${esc(t)}</td>${ppl.map(p=>{const a=ans(p,i+1);return `<td class="c ${a==="S"?"yes":""}">${a==="S"?"Sim":a==="N"?"Não":"–"}</td>`}).join("")}</tr>`).join("")}
-  </tbody></table></div></div>
- ${list.length?`<div class="sec"><h2>Detalhes</h2><div class="tablebox"><table><thead><tr><th class="c">Item</th><th>Beneficiário</th><th class="c">Ano</th><th>Descrição</th></tr></thead><tbody>
-   ${list.map(({p,q})=>{const d=S.det[dkey(p,q)]||{};return `<tr><td class="c">${q}</td><td>${esc(shortName(p))}</td><td class="c">${esc(d.ano)}</td><td>${esc(d.desc)}</td></tr>`}).join("")}
- </tbody></table></div></div>`:""}
+  <tbody>${QUESTIONS.map((t,i)=>`<tr><td>${i+1}. ${esc(t)}</td>${ppl.map(p=>{const a=ans(p,i+1);return `<td class="c ${a==="S"?"yes":""}">${a==="S"?"Sim":a==="N"?"Não":"–"}</td>`}).join("")}</tr>`).join("")}</tbody>
+ </table></div></div></details></div>
  <div class="sec">
   <div class="field-block" id="w-verdade"><label class="check"><input type="checkbox" id="verdade" ${S.verdade?"checked":""}><span>${VERDADE}</span></label><span class="msg" id="m-verdade"></span></div>
   <div class="grid" style="margin-top:16px">
@@ -507,17 +511,52 @@ function v4(){const ppl=S.people,list=yesList(),e=S.emp;return `<div class="shee
   </div></div>
 </div>`}
 
-function vDone(){const s=S.sent;return `<div class="sheet">
- <div class="sec"><svg class="okmark" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="22"/><path d="M13 22.5l6 6 12-13"/></svg><h1>Declaração concluída</h1><p class="proto">${esc(s.proto)}</p><p class="hint">Número de protocolo</p></div>
+function vDone(){const s=S.sent,c=S.clin;return `<div class="sheet">
+ <div class="sec"><svg class="okmark" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="22"/><path d="M13 22.5l6 6 12-13"/></svg><h1>Declaração registrada</h1><p class="proto">${esc(s.proto)}</p><p class="hint">Número de protocolo</p></div>
  <div class="sec"><dl class="kv">
-  <dt>Titular</dt><dd>${esc(s.titular)}</dd><dt>Empresa ou entidade</dt><dd>${esc(s.emp)}</dd>
-  <dt>Beneficiários</dt><dd>${s.n}</dd><dt>Data</dt><dd>${esc(s.local)}, ${esc(s.when)}</dd>
+  <dt>Titular</dt><dd>${esc(s.titular)}</dd><dt>Empresa</dt><dd>${esc(s.emp)}</dd>
+  <dt>Dependentes</dt><dd>${s.n-1}</dd><dt>Registrada em</dt><dd>${esc(s.when)}</dd>
  </dl></div>
  <div class="sec" style="display:flex;flex-direction:column;gap:12px;align-items:flex-start">
-  <button type="button" class="btn primary" id="pdfBtn">Baixar PDF</button>
-  <p class="hint" style="margin:0">Envie o PDF para quem te passou este formulário.</p>
+  <button type="button" class="btn primary" id="pdfBtn">Baixar cópia em PDF</button>
   <div class="status" id="pdfMsg" role="status"></div>
- </div></div>`}
+ </div>
+ <div class="sec" id="clinSec">${clinBlock()}</div>
+</div>`}
+function clinBlock(){const c=S.clin;
+  if(c.sent)return `<h2>Indicação de clínica</h2><div class="status">Indicação recebida. Nossa equipe de credenciamento vai entrar em contato.</div>`;
+  return `<h2>Indicação de clínica</h2>
+  <div class="clin-q"><p class="qt" style="margin:0">Você tem uma clínica e gostaria que ela fizesse parte da rede credenciada da Vida e Saúde?</p>
+   <span class="seg" role="group" aria-label="Indicação de clínica">${["S","N"].map(v=>`<button type="button" data-clin="${v}" data-v="${v}" aria-pressed="${c.resp===v}">${v==="S"?"Sim":"Não"}</button>`).join("")}</span></div>
+  ${c.resp==="N"?`<p class="hint" style="margin-top:12px">Tudo certo. Obrigado!</p>`:""}
+  ${c.resp==="S"?`<div class="grid clin-form" style="margin-top:16px">
+   <div class="full"><label class="f" id="w-cnome">Nome da clínica<input type="text" id="c-nome" data-c="nome" value="${esc(c.nome)}"><span class="msg" id="m-cnome"></span></label></div>
+   <label class="f"><span>Especialidade <small>opcional</small></span><input type="text" id="c-esp" data-c="esp" placeholder="Ex.: cardiologia" value="${esc(c.esp)}"></label>
+   <label class="f" id="w-ccontato">Responsável<input type="text" id="c-contato" data-c="contato" value="${esc(c.contato)}"><span class="msg" id="m-ccontato"></span></label>
+   <label class="f" id="w-ctel">Telefone ou WhatsApp<input type="tel" id="c-tel" data-c="tel" inputmode="tel" placeholder="(92) 99999-9999" value="${esc(c.tel)}"><span class="msg" id="m-ctel"></span></label>
+   <div class="full"><button type="button" class="btn primary" id="clinBtn">Enviar indicação</button><div class="status err" id="clinMsg" role="status" style="margin-top:10px"></div></div>
+  </div>`:""}`}
+function clinErrs(){const c=S.clin;return {cnome:c.nome.trim()?"":"Obrigatório.",ccontato:c.contato.trim()?"":"Obrigatório.",ctel:digits(c.tel).length>=10?"":(c.tel.trim()?"Inclua o DDD.":"Obrigatório.")}}
+function showClinErrs(){const r=clinErrs();Object.keys(r).forEach(k=>{const m=document.getElementById("m-"+k),w=document.getElementById("w-"+k);if(m)m.textContent=r[k];if(w)w.classList.toggle("bad",!!r[k])});return Object.values(r).some(Boolean)}
+
+/* registro no servidor */
+async function api(action,body){
+  const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),20000);
+  try{const r=await fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...body}),signal:ctl.signal});
+    const j=await r.json().catch(()=>({}));if(!r.ok||!j.ok)throw new Error(j.error||("HTTP "+r.status));return j}
+  finally{clearTimeout(t)}}
+function buildPayload(){
+  return {versao:FORM_VERSAO,empresa:S.emp.nome,
+    contato:{telefone:S.emp.tel,email:S.emp.email||null},
+    pessoas:S.people.map((p,i)=>({papel:p.titular?"titular":"dependente",ordem:i,nome:p.nome.trim(),cpf:digits(p.cpf),nascimento:p.nasc,sexo:p.sexo,parentesco:p.titular?null:p.parent,
+      peso_kg:num(p.peso),altura_m:num(p.altura),imc:isNaN(imc(p))?null:Math.round(imc(p)*10)/10,
+      respostas:QUESTIONS.map((_,q)=>ans(p,q+1)||null)})),
+    detalhes:yesList().map(({p,q})=>{const d=S.det[dkey(p,q)]||{};return {pergunta:q,pessoa:S.people.indexOf(p),ano:+d.ano,descricao:String(d.desc||"").trim()}}),
+    aceites:{lgpd_em:S.lgpdAt,carta_orientacao:!!S.ciencia,veracidade:!!S.verdade},
+    local:S.local.trim(),
+    cliente:{inicio_em:S.inicio,concluido_em:new Date().toISOString(),fuso:Intl.DateTimeFormat().resolvedOptions().timeZone||"",tela:screen.width+"x"+screen.height}}}
+const fmtServer=iso=>{const d=new Date(iso);return d.toLocaleDateString("pt-BR",{timeZone:"America/Manaus"})+" às "+d.toLocaleTimeString("pt-BR",{timeZone:"America/Manaus",hour:"2-digit",minute:"2-digit"})};
+function setBusyBtn(b,on,label){b.disabled=on;b.classList.toggle("loading",on);b.innerHTML=on?'<span class="spin"></span>'+label:label}
 
 /* PDF */
 function gerarPDF(){const lib=window.jspdf;if(!lib||!lib.jsPDF||!lib.jsPDF.API.autoTable)throw new Error("lib");
@@ -528,7 +567,7 @@ function gerarPDF(){const lib=window.jspdf;if(!lib||!lib.jsPDF||!lib.jsPDF.API.a
   doc.setFont("helvetica","bold").setFontSize(14).setTextColor(...MARS).text("DECLARAÇÃO DE SAÚDE",W-M,15,{align:"right"});
   doc.setFont("helvetica","normal").setFontSize(8).setTextColor(...MUT).text("Vida e Saúde Assistência Médica Ltda · CNPJ 63.782.108/0001-01 · ANS nº 42.477-3",W-M,20.5,{align:"right"});
   doc.setFont("helvetica","bold").setTextColor(...MARS).text("Protocolo "+s.proto,W-M,25,{align:"right"});
-  doc.setFont("helvetica","normal").setTextColor(...MUT).text("Gerado em "+s.when,W-M,29,{align:"right"});
+  doc.setFont("helvetica","normal").setTextColor(...MUT).text("Registrada em "+s.when,W-M,29,{align:"right"});
   doc.setDrawColor(...MARS).setLineWidth(.5).line(M,32,W-M,32);
   let y=38;
   const sec=t=>{if(y>262){doc.addPage();y=18}doc.setFont("helvetica","bold").setFontSize(10).setTextColor(...MARS).text(t.toUpperCase(),M,y);y+=2.5};
@@ -536,8 +575,8 @@ function gerarPDF(){const lib=window.jspdf;if(!lib||!lib.jsPDF||!lib.jsPDF.API.a
   const para=(t,size,color)=>{doc.setFont("helvetica","normal").setFontSize(size).setTextColor(...(color||INK));const l=doc.splitTextToSize(t,W-2*M),h=l.length*size*.42;if(y+h>280){doc.addPage();y=18}doc.text(l,M,y);y+=h+2};
   sec("Identificação");
   doc.autoTable({...base,startY:y,columnStyles:{0:{cellWidth:44,textColor:MUT},1:{fontStyle:"bold"}},
-    body:[["Empresa ou entidade",e.nome],["CNPJ",e.cnpj||"Não informado"],["Telefone do titular",e.tel],["E-mail do titular",e.email||"Não informado"],["Orientação médica",orientLine()]]});after();
-  sec("Beneficiários");
+    body:[["Empresa",e.nome],["Titular",ppl[0].nome],["Telefone do titular",e.tel],["E-mail do titular",e.email||"Não informado"],["Dependentes",String(ppl.length-1)]]});after();
+  sec("Titular e dependentes");
   doc.autoTable({...base,startY:y,head:[["","Nome","Vínculo","CPF","Nascimento","Sexo","Peso (kg)","Altura (m)","IMC"]],
     columnStyles:{0:{cellWidth:13,fontStyle:"bold"},3:{cellWidth:24},4:{cellWidth:19},6:{halign:"center"},7:{halign:"center"},8:{halign:"center"}},
     body:ppl.map(p=>[shortLabel(p),p.nome,p.titular?"Titular":p.parent,p.cpf,brDate(p.nasc),p.sexo,fmt1(num(p.peso)),fmt2(num(p.altura)),fmt1(imc(p))])});after();
@@ -548,19 +587,19 @@ function gerarPDF(){const lib=window.jspdf;if(!lib||!lib.jsPDF||!lib.jsPDF.API.a
     didParseCell:d=>{if(d.section==="body"&&d.column.index>=2&&d.cell.raw==="S"){d.cell.styles.textColor=[255,255,255];d.cell.styles.fillColor=MARS}}});after();
   sec("Informações complementares");
   const list=yesList();
-  if(list.length){doc.autoTable({...base,startY:y,head:[["Item","Beneficiário","Ano do evento","Datas, tratamentos e situação atual"]],
+  if(list.length){doc.autoTable({...base,startY:y,head:[["Item","Titular / dependente","Ano do evento","Datas, tratamentos e situação atual"]],
     columnStyles:{0:{cellWidth:12,halign:"center"},1:{cellWidth:38},2:{cellWidth:20,halign:"center"}},
     body:list.map(({p,q})=>{const d=S.det[dkey(p,q)]||{};return [String(q),p.nome+"\n"+label(p),d.ano||"",d.desc||""]})});after()}
   else{y+=3;para("Nenhuma resposta Sim.",8.5,MUT)}
   para(CPT_TXT,7.5,MUT);y+=2;
   sec("Declaração do proponente titular");y+=2;
-  para(ORIENT[S.orient]+(S.orient!=="dispensou"?" Médico orientador: "+S.medNome+", CRM "+S.medCrm+".":""),8.5);
-  para(VERDADE,8.5);para("Ciência da Carta de Orientação ao Beneficiário: confirmada.",8.5);para("Concordância com o tratamento de dados pessoais, nos termos da LGPD (Lei nº 13.709/2018), para avaliação da adesão ao plano: confirmada em "+S.lgpdAt+".",8.5);y+=2;
+  para(VERDADE,8.5);para("Ciência da Carta de Orientação ao Beneficiário: confirmada.",8.5);para("Concordância com o tratamento de dados pessoais, nos termos da LGPD (Lei nº 13.709/2018), para avaliação da adesão ao plano: confirmada em "+fmtServer(S.lgpdAt)+".",8.5);y+=2;
   if(y>262){doc.addPage();y=18}
   doc.setFillColor(...SOFT).setDrawColor(...LINE).roundedRect(M,y,W-2*M,20,1.5,1.5,"FD");
-  doc.setFont("helvetica","normal").setFontSize(8).setTextColor(...MUT).text("Aceite eletrônico do proponente titular",M+4,y+5.5);
+  doc.setFont("helvetica","normal").setFontSize(8).setTextColor(...MUT).text("Registro eletrônico do proponente titular",M+4,y+5.5);
   doc.setFont("helvetica","bold").setFontSize(9.5).setTextColor(...INK).text(ppl[0].nome+"  ·  CPF "+ppl[0].cpf,M+4,y+11);
-  doc.setFont("helvetica","normal").setFontSize(8.5).text(s.local+", "+s.when+"  ·  Protocolo "+s.proto,M+4,y+16);
+  doc.setFont("helvetica","normal").setFontSize(8.5).text(s.local+" · registrada em "+s.when+" (horário do servidor) · Protocolo "+s.proto,M+4,y+16);
+  y+=24;doc.setFont("courier","normal").setFontSize(7).setTextColor(...MUT).text("Código de verificação (SHA-256): "+(s.hash||""),M,y);
   const n=doc.getNumberOfPages();
   for(let i=1;i<=n;i++){doc.setPage(i);doc.setDrawColor(...LINE).setLineWidth(.3).line(M,284,W-M,284);doc.setFont("helvetica","normal").setFontSize(7.5).setTextColor(...MUT);
     doc.text("Vida e Saúde · ANS nº 42.477-3 · Declaração de Saúde · "+ppl[0].nome,M,288.5);doc.text("Protocolo "+s.proto+" · Página "+i+" de "+n,W-M,288.5,{align:"right"})}
@@ -571,13 +610,14 @@ function gerarPDF(){const lib=window.jspdf;if(!lib||!lib.jsPDF||!lib.jsPDF.API.a
 const errBox=()=>{let b=document.getElementById("errsum");if(!b){b=document.createElement("div");b.id="errsum";b.className="errsum";b.setAttribute("role","alert");view.prepend(b)}return b};
 view.addEventListener("input",ev=>{const t=ev.target;
   if(t.dataset.f){const p=S.people.find(x=>x.id===t.dataset.p);if(!p)return;if(t.dataset.f==="cpf")t.value=fmtCpf(t.value);p[t.dataset.f]=t.value;updDerived(p);return}
-  if(t.dataset.e){const f=t.dataset.e;if(f==="cnpj")t.value=fmtCnpj(t.value);if(f==="tel")t.value=fmtTel(t.value);S.emp[f]=t.value;showEmpErr(f,!!S.touched["emp"+f]);return}
+  if(t.dataset.e){const f=t.dataset.e;if(f==="tel")t.value=fmtTel(t.value);S.emp[f]=t.value;showEmpErr(f,!!S.touched["emp"+f]);return}
+  if(t.dataset.c){const f=t.dataset.c;if(f==="tel")t.value=fmtTel(t.value);S.clin[f]=t.value;if(S.clin.tried)showClinErrs();return}
   if(t.dataset.d){const k=t.dataset.k;S.det[k]=S.det[k]||{};if(t.dataset.d==="ano")t.value=digits(t.value).slice(0,4);S.det[k][t.dataset.d]=t.value;showDetErr(k,false);return}
-  if(t.id==="medNome")S.medNome=t.value;if(t.id==="medCrm")S.medCrm=t.value;if(t.id==="local")S.local=t.value;showStepErrs(S.step)});
+  if(t.id==="local")S.local=t.value;showStepErrs(S.step)});
 view.addEventListener("change",ev=>{const t=ev.target;
   if(t.dataset.f){const p=S.people.find(x=>x.id===t.dataset.p);if(p){p[t.dataset.f]=t.value;S.touched[p.id+t.dataset.f]=true;updDerived(p)}}
   if(t.id==="lgpd"){S.lgpd=t.checked;if(t.checked){document.getElementById("m-lgpd").textContent="";document.getElementById("w-lgpd").classList.remove("bad")}}if(t.id==="ciencia")S.ciencia=t.checked;if(t.id==="verdade")S.verdade=t.checked;
-  if(t.name==="orient"){S.orient=t.value;document.getElementById("medbox").hidden=t.value==="dispensou"}showStepErrs(S.step)});
+  showStepErrs(S.step)});
 view.addEventListener("focusout",ev=>{const t=ev.target;
   if(t.dataset.f){const p=S.people.find(x=>x.id===t.dataset.p);if(p){S.touched[p.id+t.dataset.f]=true;showFieldErr(p,t.dataset.f,true)}}
   if(t.dataset.e){S.touched["emp"+t.dataset.e]=true;showEmpErr(t.dataset.e,true)}
@@ -587,6 +627,12 @@ view.addEventListener("click",ev=>{const b=ev.target.closest("button");if(!b)ret
     b.parentNode.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));
     const r=document.getElementById("q-"+q);if(r&&S.people.every(pp=>ans(pp,q))){r.classList.remove("missing");const qm=document.getElementById("qm-"+q);if(qm)qm.textContent=""}
     if(b.dataset.v==="N")delete S.det[p+"-"+q];updProgress();return}
+  if(b.dataset.clin){S.clin.resp=b.dataset.clin;if(b.dataset.clin==="S"&&!S.clin.tel)S.clin.tel=S.emp.tel;const sec=document.getElementById("clinSec");sec.innerHTML=clinBlock();
+    if(b.dataset.clin==="S"&&!REDUCE){const f=sec.querySelector(".clin-form");if(f)f.classList.add("pop-in")}const n=document.getElementById("c-nome");if(n)n.focus({preventScroll:true});return}
+  if(b.id==="clinBtn"){if(b.disabled)return;S.clin.tried=true;if(showClinErrs())return;const m=document.getElementById("clinMsg");m.textContent="";setBusyBtn(b,true,"Enviando");
+    api("indicar_clinica",{protocolo:S.sent.proto,token:S.sent.token,clinica:{nome:S.clin.nome.trim(),especialidade:S.clin.esp.trim()||null,responsavel:S.clin.contato.trim(),telefone:digits(S.clin.tel)}})
+    .then(()=>{S.clin.sent=true;const sec=document.getElementById("clinSec");sec.innerHTML=clinBlock()})
+    .catch(()=>{setBusyBtn(b,false,"Enviar indicação");m.textContent="Não foi possível enviar. Tente de novo."});return}
   if(b.id==="addDep"){S.people.push(newPerson(false));render();const l=S.people[S.people.length-1],el=document.getElementById(l.id+"-nome");if(el){if(!REDUCE)el.closest(".sec").classList.add("pop");el.focus({preventScroll:true});el.scrollIntoView({block:"center",behavior:REDUCE?"auto":"smooth"})}return}
   if(b.dataset.remove){const id=b.dataset.remove;
     if(b.dataset.confirm){const done=()=>{S.people=S.people.filter(p=>p.id!==id);delete S.ans[id];Object.keys(S.det).forEach(k=>{if(k.startsWith(id+"-"))delete S.det[k]});render()};
@@ -601,7 +647,7 @@ $("#next").addEventListener("click",()=>{if(busy)return;
   if(S.sent){navigate(-1,()=>{S=fresh();S.welcome=false});return}
   if(!S.lgpdOk){if(!S.lgpd){const m=document.getElementById("m-lgpd");m.textContent="";void m.offsetWidth;m.textContent="Marque para continuar.";document.getElementById("w-lgpd").classList.add("bad");
       document.getElementById("lgpd").focus({preventScroll:true});document.getElementById("w-lgpd").scrollIntoView({block:"center",behavior:REDUCE?"auto":"smooth"});return}
-    navigate(1,()=>{const n=new Date();S.lgpdOk=true;S.lgpdAt=n.toLocaleDateString("pt-BR")+" às "+n.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})});return}
+    navigate(1,()=>{S.lgpdOk=true;S.lgpdAt=new Date().toISOString()});return}
   const errs=validate(S.step);
   if(errs.length){
     if(S.step===1){EMPF.forEach(f=>{S.touched["emp"+f]=true;showEmpErr(f,true)});S.people.forEach(p=>personFields(p).forEach(f=>{S.touched[p.id+f]=true;showFieldErr(p,f,true)}))}
@@ -614,9 +660,10 @@ $("#next").addEventListener("click",()=>{if(busy)return;
     const box=errBox();box.textContent=n>1?"Há "+n+" campos para corrigir. Eles estão destacados abaixo.":n===1?"Há 1 campo para corrigir. Ele está destacado abaixo.":errs[0];
     const bad=view.querySelector(".bad input,.bad select,.bad textarea,.qrow.missing,.field-block.bad input");
     (bad||box).scrollIntoView({block:"center",behavior:REDUCE?"auto":"smooth"});if(bad&&bad.focus)bad.focus({preventScroll:true});return}
-  if(S.step===4){navigate(1,()=>{const now=new Date(),rnd=Math.random().toString(36).slice(2,6).toUpperCase();
-    S.sent={proto:"DS-"+now.getFullYear()+String(now.getMonth()+1).padStart(2,"0")+String(now.getDate()).padStart(2,"0")+"-"+rnd,titular:S.people[0].nome,emp:S.emp.nome,n:S.people.length,local:S.local,
-      when:now.toLocaleDateString("pt-BR")+" às "+now.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"})}});return}
+  if(S.step===4){const nb=$("#next"),old=document.getElementById("errsum");if(old)old.remove();busy=true;setBusyBtn(nb,true,"Registrando");
+    api("registrar",{payload:buildPayload()}).then(r=>{busy=false;nb.disabled=false;nb.classList.remove("loading");
+      navigate(1,()=>{S.sent={proto:r.protocolo,hash:r.hash,token:r.token,at:r.registrado_em,when:fmtServer(r.registrado_em),titular:S.people[0].nome,emp:S.emp.nome,n:S.people.length,local:S.local}})})
+    .catch(()=>{busy=false;setBusyBtn(nb,false,"Concluir");const box=errBox();box.textContent="Não foi possível registrar sua declaração. Verifique sua conexão e tente de novo.";box.scrollIntoView({block:"center",behavior:REDUCE?"auto":"smooth"})});return}
   navigate(1,()=>{S.step++})});
 $("#back").addEventListener("click",()=>{if(S.step>0&&!busy)navigate(-1,()=>{S.step--})});
 $("#form").addEventListener("submit",ev=>ev.preventDefault());
