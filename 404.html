@@ -48,7 +48,8 @@ body>main{flex:1 0 auto;width:100%;display:flex;flex-direction:column}
 .top img{height:40px;width:auto;display:block}
 .top .tt{display:flex;flex-direction:column;align-items:flex-end;gap:0;text-align:right;min-width:0}
 .top .tt b{font-family:var(--head);font-weight:600;font-size:.95rem;color:var(--title);letter-spacing:.01em}
-.top .tt span{font-size:.78rem;color:var(--muted);max-width:46vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* nome da empresa: quebra em até duas linhas em vez de cortar (ex.: AMAZONAS COPIADORAS LTDA) */
+.top .tt span{font-size:.78rem;line-height:1.3;color:var(--muted);max-width:min(60vw,320px);overflow-wrap:anywhere;text-wrap:balance;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
 
 /* etapas */
 .steps{display:flex;gap:4px;margin:24px 0 12px;padding:0;list-style:none}
