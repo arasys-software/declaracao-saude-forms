@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#470D23">
 <title>Declaração de Saúde Vida e Saúde</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Urbanist:wght@600;700&family=Public+Sans:wght@400;500;600&family=Fraunces:ital,opsz,wght,SOFT@1,9..144,400..600,0..100&display=swap">
 <style>
 /* Declaração de Saúde · v2.0
    Uma "folha" branca central sobre fundo levemente rosado, cabeçalho fino com a logo, ações fixas no rodapé.
@@ -263,15 +263,52 @@ tr:last-child td{border-bottom:0}
 .doc-add{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
 .doc-busy{font-size:.84rem;color:var(--muted)}
 
-/* boas-vindas */
-.welcome .hero{padding-top:32px;padding-bottom:28px}
-.journey{display:flex;align-items:center;gap:12px;margin:20px 0 0;padding:12px 16px;border-radius:var(--r-md);background:var(--tint);color:var(--title);font-size:.94rem;font-weight:500}
-.journey b{flex:none;font-family:var(--body);font-size:.8rem;font-weight:600;letter-spacing:.02em;color:var(--on);background:var(--brand);border-radius:999px;padding:4px 12px}
-.facts{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:12px}
-.facts li,.priv li{display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;font-size:.94rem;color:var(--muted);align-items:start}
-.facts li b,.priv li b{color:var(--ink);font-weight:600}
-.priv{list-style:none;margin:0;padding:0;display:grid;gap:16px}
-.priv li b{display:block;margin-bottom:2px}
+/* boas-vindas em duas telas.
+   1) "hello": só a saudação, centrada, entra palavra por palavra e avança sozinha (ou com um toque).
+   2) "welcome": o que a pessoa precisa saber antes de começar, com o aceite e o botão Continuar. */
+.hello{position:relative;isolation:isolate;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  min-height:calc(100vh - 190px);min-height:calc(100dvh - 190px);padding:32px 8px 48px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hello::before{content:"";position:absolute;left:50%;top:46%;width:min(720px,120vw);aspect-ratio:1;transform:translate(-50%,-50%);z-index:-1;
+  border-radius:50%;background:radial-gradient(closest-side,rgba(233,205,210,.7),rgba(233,205,210,0));opacity:0}
+h1[tabindex="-1"]:focus{outline:none}
+.hello h1{font-size:clamp(2.6rem,1.5rem + 4.6vw,4.5rem);line-height:1.02;letter-spacing:-.02em;max-width:11ch}
+.hello h1 .w{display:inline-block;opacity:0;transform:translateY(22px);filter:blur(10px)}
+/* frase de impacto: um traço rosé abre espaço, "Este é o primeiro passo" entra em tamanho de título
+   e um marca-texto rosé passa por baixo de "primeiro passo"; o complemento vem logo abaixo, menor */
+.hello-rule{display:block;width:56px;height:3px;border-radius:3px;background:var(--rose);margin:30px auto 0;transform:scaleX(0)}
+.hello .sub{margin:22px auto 0;text-align:center}
+.hello .sub .l1{display:block;font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;font-variation-settings:"SOFT" 100;font-optical-sizing:auto;font-size:clamp(1.7rem,1.25rem + 2.1vw,2.6rem);line-height:1.15;letter-spacing:0;color:var(--title);opacity:0}
+.hello .sub .l2{display:block;max-width:30ch;margin:12px auto 0;font-size:clamp(1.06rem,.98rem + .45vw,1.28rem);line-height:1.5;color:var(--ink);opacity:0;text-wrap:balance}
+.hello mark{position:relative;background:none;color:inherit;white-space:nowrap}
+.hello mark::after{content:"";position:absolute;left:-.1em;right:-.1em;bottom:.02em;height:.36em;border-radius:.18em;background:rgba(154,88,92,.3);z-index:-1;transform:scaleX(0);transform-origin:left}
+.hello-foot{margin-top:40px;display:flex;flex-direction:column;align-items:center;gap:10px;opacity:0}
+.hello-bar{display:block;width:128px;height:3px;border-radius:3px;background:rgba(71,13,35,.12);overflow:hidden}
+.hello-bar i{display:block;height:100%;background:var(--brand);transform:scaleX(0);transform-origin:left}
+.hello-skip{border:0;background:none;font:inherit;font-size:.92rem;color:var(--muted);padding:10px 16px;min-height:44px;border-radius:999px;cursor:pointer;transition:color var(--t-fast) ease,background-color var(--t-fast) ease}
+.hello-skip:hover{color:var(--title);background:rgba(71,13,35,.06)}
+.hello.play::before{animation:fadeIn 1.6s var(--ease-out) both}
+.hello.play h1 .w{animation:wordIn 900ms var(--ease-out) both;animation-delay:calc(120ms + var(--i,0)*80ms)}
+.hello.play .hello-rule{animation:grow 600ms var(--ease-out) 700ms both}
+.hello.play .sub .l1{animation:enter 800ms var(--ease-out) 850ms both}
+.hello.play .sub .l2{animation:enter 800ms var(--ease-out) 1050ms both}
+.hello.play mark::after{animation:grow 700ms var(--ease-out) 1450ms both}
+.hello.play .hello-foot{animation:fadeIn 600ms ease 1600ms both}
+.hello.play .hello-bar i{animation:barFill var(--hello-ms,5000ms) linear 1300ms both}
+.hello.leave{transition:opacity 420ms var(--ease-in),transform 420ms var(--ease-in),filter 420ms var(--ease-in);opacity:0;transform:translateY(-12px);filter:blur(6px)}
+@keyframes wordIn{to{opacity:1;transform:none;filter:blur(0)}}
+@keyframes barFill{to{transform:scaleX(1)}}
+@keyframes grow{to{transform:none}}
+@media (max-width:560px){.hello{min-height:calc(100dvh - 170px);padding:24px 4px 40px}.hello-foot{margin-top:36px}}
+
+.welcome .intro-sec{padding:36px 32px 28px}
+.welcome .intro-sec .lead{font-size:1.06rem;line-height:1.6;max-width:52ch;margin-top:14px}
+.priv{list-style:none;margin:0;padding:0;display:grid;gap:18px}
+.priv li{display:grid;grid-template-columns:40px minmax(0,1fr);gap:14px;font-size:.93rem;color:var(--muted);align-items:start;align-content:start}
+.priv li b{display:block;margin-bottom:2px;color:var(--ink);font-weight:600}
+.priv .ib{width:40px;height:40px;border-radius:12px;background:var(--tint);display:grid;place-items:center}
+.priv .ib .ico{margin:0}
+@media (min-width:720px){.priv{grid-template-columns:repeat(3,minmax(0,1fr));gap:28px}.priv li{grid-template-columns:1fr;gap:12px}}
+@media (max-width:560px){.welcome .intro-sec{padding:28px 16px 22px}}
 .ico{width:22px;height:22px;margin-top:1px}
 .ico *{fill:none;stroke:var(--brand);stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
@@ -307,12 +344,12 @@ tr:last-child td{border-bottom:0}
 .intro .panel.l{left:0;background:linear-gradient(90deg,#3E0B1F,#470D23)}
 .intro .panel.r{right:0;background:linear-gradient(90deg,#470D23,#3E0B1F)}
 .intro .brand{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:24px}
-.intro .brand img{width:220px;max-width:58vw;height:auto;opacity:0;transform:translateY(10px) scale(.97);filter:brightness(0) invert(1) blur(6px)}
-.intro .brand .tt{font-family:var(--head);font-weight:600;font-size:1.15rem;letter-spacing:.04em;color:rgba(255,255,255,.86);clip-path:inset(0 0 100% 0);transform:translateY(8px)}
+.intro .brand img{width:264px;max-width:66vw;height:auto;opacity:0;transform:translateY(14px) scale(.9);filter:brightness(0) invert(1) blur(6px)}
+.intro .brand .tt{font-family:var(--head);font-weight:600;font-size:1.25rem;letter-spacing:.04em;color:rgba(255,255,255,.86);clip-path:inset(0 0 100% 0);transform:translateY(8px)}
 .intro .brand .load{width:72px;height:2px;border-radius:2px;background:rgba(255,255,255,.18);overflow:hidden;opacity:0;transition:opacity var(--t-base) ease}
 .intro .brand .load::after{content:"";display:block;width:40%;height:100%;background:rgba(255,255,255,.7);animation:loadbar 1.1s linear infinite}
 .intro.waiting .brand .load{opacity:1}
-.intro.play .brand img{animation:introLogo var(--t-deliberate) var(--ease-out) 120ms forwards}
+.intro.play .brand img{animation:introLogo 860ms var(--ease-out) 100ms forwards}
 .intro.play .brand .tt{animation:introTitle 520ms var(--ease-out) 420ms forwards}
 .intro.leave .brand{transition:opacity 220ms var(--ease-in),transform 220ms var(--ease-in),filter 220ms var(--ease-in);opacity:0;transform:translateY(-6px);filter:blur(4px)}
 .intro.open .panel{transition:transform 680ms var(--ease-io)}
@@ -540,7 +577,7 @@ function renderSteps(){const ol=$("#steps");if(ol.children.length!==STEPS.length
   const act=$("#actions"),back=$("#back"),next=$("#next");
   act.hidden=!["welcome","form"].includes(S.phase);
   back.hidden=!(inForm&&S.step>0);
-  next.textContent=done?"Nova declaração":S.phase==="welcome"?"Começar":S.step===LAST?"Enviar declaração":"Continuar";
+  next.textContent=done?"Nova declaração":S.phase==="welcome"?"Continuar":S.step===LAST?"Enviar declaração":"Continuar";
   $("#topEmp").textContent=S.emp.nome||""}
 function animateIn(dir){if(REDUCE)return;const sh=view.querySelector(".sheet");if(!sh||sh.classList.contains("done"))return;
   sh.classList.add("in",dir>0?"from-r":dir<0?"from-l":"from-intro");
@@ -550,8 +587,9 @@ function navigate(dir,mutate){if(busy)return;const sh=view.querySelector(".sheet
   const swap=()=>{mutate();window.scrollTo(0,0);render(dir);busy=false};
   if(REDUCE||!sh){swap();return}busy=true;sh.classList.add(dir<0?"out-r":"out-l");setTimeout(swap,160)}
 function render(dir){renderSteps();
-  const v={loading:()=>"",nolink:vNoLink,badlink:vBadLink,neterr:vNetErr,welcome:vWelcome,done:vDone}[S.phase];
+  const v={loading:()=>"",nolink:vNoLink,badlink:vBadLink,neterr:vNetErr,hello:vHello,welcome:vWelcome,done:vDone}[S.phase];
   view.innerHTML=v?v():[v0,v1,v2,v3][S.step]();
+  if(S.phase==="hello"){helloWire();return}
   if(dir)animateIn(dir);
   if(S.phase==="done"){playDone();return}
   if(dir&&S.phase!=="loading"){const h=view.querySelector("h1");if(h){h.tabIndex=-1;h.focus({preventScroll:true})}}
@@ -566,25 +604,32 @@ const vNoLink=()=>stateBox("link","Use o link da sua empresa","A Declaração de
 const vBadLink=()=>stateBox("link","Este link não está ativo","Confira se o endereço foi copiado inteiro. Se o problema continuar, peça um novo link ao RH da sua empresa.");
 const vNetErr=()=>stateBox("wifi","Não foi possível carregar","Verifique sua conexão com a internet e tente de novo.",`<button type="button" class="btn primary" id="retry">Tentar de novo</button>`);
 
-function vWelcome(){const e=S.emp;return `<div class="sheet welcome">
- <div class="sec hero">
-  <p class="eyebrow">Declaração de Saúde · ${esc(e.nome)}</p>
-  <h1 id="wTitle" tabindex="-1">Boas-vindas à Vida e Saúde</h1>
-  <p class="lead">Prezado(a) beneficiário(a), este questionário nos ajuda a conhecer a sua saúde e a dos seus dependentes, se houver, para cuidarmos melhor de vocês desde o primeiro dia.</p>
-  <p class="journey"><b>1º passo</b><span>Sua jornada com a Vida e Saúde começa aqui.</span></p>
-  <ul class="facts">
-   <li>${ICON.clock}<span><b>Cerca de 10 minutos.</b> Você revisa tudo antes de enviar.</span></li>
-   <li>${ICON.list}<span><b>Tenha em mãos</b> CPF, data de nascimento, peso e altura de cada pessoa, e o CEP de casa.</span></li>
-   <li>${ICON.card}<span><b>Com dependentes,</b> separe foto da frente e do verso do RG ou da CNH do titular.</span></li>
-  </ul>
+const HELLO_MS=5000;let helloT=null,helloOn=false;
+function vHello(){const t="Boas-vindas à Vida e Saúde".split(" ").map((w,i)=>`<span class="w" style="--i:${i}">${w}</span>`).join(" ");
+ return `<div class="hello" id="hello" style="--hello-ms:${HELLO_MS}ms">
+ <h1 id="hTitle" tabindex="-1" aria-label="Boas-vindas à Vida e Saúde">${t}</h1>
+ <span class="hello-rule" aria-hidden="true"></span>
+ <p class="sub"><span class="l1">Este é o <mark>primeiro passo</mark></span><span class="l2">da sua jornada dentro da Operadora Vida e Saúde.</span></p>
+ <div class="hello-foot"><span class="hello-bar" aria-hidden="true"><i></i></span><button type="button" class="hello-skip" id="helloSkip">Continuar agora</button></div>
+</div>`}
+function helloStart(){if(S.phase!=="hello"||helloOn)return;const h=$("#hello");if(!h)return;helloOn=true;h.classList.add("play");
+  const t=$("#hTitle");if(t)t.focus({preventScroll:true});helloT=setTimeout(helloNext,HELLO_MS+1300)}
+function helloNext(){if(S.phase!=="hello"||!helloOn)return;helloOn=false;clearTimeout(helloT);const h=$("#hello");
+  const go=()=>{S.phase="welcome";render();animateIn(0);const t=$("#wTitle");if(t)t.focus({preventScroll:true})};
+  if(REDUCE||!h){go();return}h.classList.add("leave");setTimeout(go,420)}
+function helloWire(){$("#hello").addEventListener("click",helloNext);if(!document.body.classList.contains("introing"))helloStart()}
+document.addEventListener("keydown",e=>{if(S.phase==="hello"&&helloOn&&(e.key==="Enter"||e.key===" "||e.key==="Escape")){e.preventDefault();helloNext()}});
+function vWelcome(){return `<div class="sheet welcome">
+ <div class="sec intro-sec">
+  <h1 id="wTitle" tabindex="-1">Antes de começar</h1>
+  <p class="lead">Prezado(a) beneficiário(a), esta pesquisa nos ajuda a conhecer você e seus dependentes para atendermos cada vez melhor.</p>
  </div>
  <div class="sec">
   <h2>Seus dados estão protegidos</h2>
   <ul class="priv">
-   <li>${ICON.db}<div><b>Registro seguro</b>Suas respostas ficam registradas no sistema da Vida e Saúde, com data e hora. No final, você pode baixar uma cópia em PDF.</div></li>
-   <li>${ICON.lock}<div><b>Acesso restrito</b>Somente a equipe autorizada da Vida e Saúde, como a auditoria médica, consulta essas informações.</div></li>
-   <li>${ICON.doc}<div><b>Uso exclusivo</b>Suas informações são usadas apenas para o seu plano de saúde. Não são vendidas nem compartilhadas com terceiros, exceto quando a lei exige (por exemplo, com a ANS).</div></li>
-   <li>${ICON.shield}<div><b>Protegidas pela LGPD</b>Tratamos seus dados conforme a Lei nº 13.709/2018. Você pode pedir acesso ou correção dos seus dados pelos canais de atendimento da Vida e Saúde.</div></li>
+   <li><span class="ib">${ICON.db}</span><div><b>Registro seguro</b>Suas respostas ficam registradas no sistema da Vida e Saúde, com data e hora. No final, você pode baixar uma cópia em PDF.</div></li>
+   <li><span class="ib">${ICON.lock}</span><div><b>Acesso restrito</b>Somente a equipe autorizada da Vida e Saúde, como a auditoria médica, consulta essas informações.</div></li>
+   <li><span class="ib">${ICON.shield}</span><div><b>Protegidas pela LGPD</b>Tratamos seus dados conforme a Lei nº 13.709/2018. Você pode pedir acesso ou correção dos seus dados pelos canais de atendimento da Vida e Saúde.</div></li>
   </ul>
  </div>
  <div class="sec"><div class="field-block" id="w-lgpd"><label class="check box"><input type="checkbox" id="lgpd" aria-describedby="m-lgpd" ${S.lgpd?"checked":""}><span>Li e autorizo a Vida e Saúde a usar os meus dados de saúde, e os dos meus dependentes, para avaliar e administrar o meu plano.</span></label><span class="msg" id="m-lgpd" role="alert"></span></div></div>
@@ -1030,9 +1075,9 @@ function slugDoLink(){const q=new URLSearchParams(location.search).get("e");if(q
 const intro=$("#intro");let introT0=0,introDone=false,waitTimer=null;
 function openIntro(){if(introDone)return;introDone=true;clearTimeout(waitTimer);intro.classList.remove("waiting");
   render();
-  if(REDUCE){intro.classList.add("fade");document.body.classList.remove("introing");setTimeout(()=>intro.remove(),220);return}
+  if(REDUCE){intro.classList.add("fade");document.body.classList.remove("introing");helloStart();setTimeout(()=>intro.remove(),220);return}
   intro.classList.add("leave");
-  setTimeout(()=>{intro.classList.add("open");document.body.classList.remove("introing");animateIn(0)},180);
+  setTimeout(()=>{intro.classList.add("open");document.body.classList.remove("introing");animateIn(0);helloStart()},180);
   setTimeout(()=>intro.remove(),1100)}
 function ready(){if(introDone){render(1);return}const MIN=REDUCE?300:1200,wait=Math.max(0,MIN-(performance.now()-introT0));setTimeout(openIntro,wait)}
 async function start(){
@@ -1040,7 +1085,7 @@ async function start(){
   if(introDone){S.phase="loading";render()}
   if(!slug){S.phase="nolink";ready();return}
   if(!SLUG_RE.test(slug)){S.phase="badlink";ready();return}
-  try{const r=await api("empresa",{empresa:slug},12000);S.emp.slug=slug;S.emp.nome=r.nome;S.phase="welcome"}
+  try{const r=await api("empresa",{empresa:slug},12000);S.emp.slug=slug;S.emp.nome=r.nome;S.phase="hello"}
   catch(err){S.phase=err&&(err.status===404||err.status===422)?"badlink":"neterr"}
   ready()}
 introT0=performance.now();document.body.classList.add("introing");
