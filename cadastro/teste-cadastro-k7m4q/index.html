@@ -292,13 +292,13 @@ function telaRevisao(dados){
   $("#enviar").onclick=async()=>{if(enviando)return;enviando=true;const b=$("#enviar");b.disabled=true;b.textContent="Enviando…";$("#envioErro").innerHTML="";
     try{const r=await api("registrar",{payload:dados,versao:VERSAO},30000);sujo=false;telaFim(r)}
     catch(err){enviando=false;b.disabled=false;b.textContent="Enviar cadastro";
-      $("#envioErro").innerHTML=`<div class="alert err">${err.status===422?"Algo precisa ser corrigido: "+esc(err.message)+". Clique em Corrigir.":err.status===429?"Muitos envios seguidos desta conexão. Aguarde alguns minutos e tente de novo.":"Não foi possível enviar. Verifique a internet e tente de novo."}</div>`}}}
+      $("#envioErro").innerHTML=`<div class="alert err">${err.status===409?"Não foi possível enviar: "+esc(err.message.replace(/^já existe/,"já existe"))+". Cada pessoa só pode ser cadastrada uma vez. Se precisar corrigir algum dado, fale com a Vida e Saúde pelo e-mail informacao@tenhavidaesaude.com.br.":err.status===422?"Algo precisa ser corrigido: "+esc(err.message)+". Clique em Corrigir.":err.status===429?"Muitos envios seguidos desta conexão. Aguarde alguns minutos e tente de novo.":"Não foi possível enviar. Verifique a internet e tente de novo."}</div>`}}}
 
 function telaFim(r){app.innerHTML=`<div class="sheet"><div class="sec">
   <h1>Cadastro enviado</h1>
   <p class="lead">Recebemos os dados de ${r.vidas===1?"1 pessoa":r.vidas+" pessoas"}. A equipe da Vida e Saúde vai conferir e fazer a inclusão no plano.</p>
   <div class="proto"><span class="hint" style="margin:0">Protocolo</span><b id="protoTxt">${esc(r.protocolo)}</b><button type="button" class="btn ghost" id="copiar" style="min-height:40px;padding:6px 14px">Copiar</button></div>
-  <p class="hint" style="margin-top:14px">Guarde o protocolo. Se precisar corrigir algo, faça um novo envio: vale sempre o mais recente.</p>
+  <p class="hint" style="margin-top:14px">Guarde o protocolo. Cada pessoa só pode ser cadastrada uma vez: se precisar corrigir algum dado, fale com a Vida e Saúde pelo e-mail informacao@tenhavidaesaude.com.br, informando o protocolo.</p>
   </div></div>`;scrollTo({top:0});
   $("#copiar").onclick=()=>{const b=$("#copiar");const ok=()=>{b.textContent="Copiado";setTimeout(()=>b.textContent="Copiar",1800)};
     try{navigator.clipboard.writeText(r.protocolo).then(ok,()=>{})}catch(_){}}}
