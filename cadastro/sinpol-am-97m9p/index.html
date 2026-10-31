@@ -147,7 +147,19 @@ function idade(t){const m=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(t||"");if(!m)return
   if(n.getMonth()+1<mo||(n.getMonth()+1===mo&&n.getDate()<d))x--;return x>120?null:x}
 const FALSOS=/(^|\.)(mailinator|yopmail|guerrillamail|10minutemail|tempmail|temp-mail|sharklasers|getnada|trashmail|dispostable|fakemail|example|exemplo|teste|test)\.[a-z.]+$/i;
 const LOCAIS=/^(teste|test|naotem|nao\.tem|sememail|sem\.email|nenhum|xxx+|aaa+|email|abc|123)$/i;
-function emailOk(e){const m=/^([^\s@]+)@([a-z0-9.-]+\.[a-z]{2,})$/i.exec(e||"");return !!m&&!FALSOS.test(m[2])&&!LOCAIS.test(m[1])}
+// mesma regra do servidor: erros de digitação nos provedores e símbolos que o Fac Plan recusa
+const TROCADOS={"gmail.como":"gmail.com","gmail.co":"gmail.com","gmail.con":"gmail.com","gmail.cm":"gmail.com","gmail.om":"gmail.com","gmail.com.br":"gmail.com",
+  "gmial.com":"gmail.com","gmal.com":"gmail.com","gmai.com":"gmail.com","gamil.com":"gmail.com","gnail.com":"gmail.com","gmaill.com":"gmail.com",
+  "hotmail.como":"hotmail.com","hotmail.co":"hotmail.com","hotmail.con":"hotmail.com","hotmail.cm":"hotmail.com","hotmial.com":"hotmail.com",
+  "hotmal.com":"hotmail.com","hotmai.com":"hotmail.com","hotamil.com":"hotmail.com","homail.com":"hotmail.com","hotmeil.com":"hotmail.com",
+  "outlok.com":"outlook.com","outlook.co":"outlook.com","outlook.con":"outlook.com","yaho.com":"yahoo.com","yahoo.co":"yahoo.com",
+  "yahoo.con":"yahoo.com","icloud.co":"icloud.com","icloud.con":"icloud.com"};
+function emailProblema(e){const m=/^([^\s@]+)@([^\s@]+)$/.exec(e||"");if(!m)return "Informe um e-mail válido que você usa.";
+  const u=m[1],d=m[2];if(!/^[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(d))return "Informe um e-mail válido que você usa.";
+  const certo=TROCADOS[d.toLowerCase()]||(/\.(con|cmo|comm|como|cpm|xom|vom)$/i.test(d)?d.replace(/\.[a-z]+$/i,".com"):null);
+  if(certo)return `Confira o e-mail. Você quis dizer ${u}@${certo}?`;
+  if(!/^[a-z0-9]+([._+-][a-z0-9]+)*$/i.test(u))return "Confira o e-mail: ponto, traço ou _ não podem ficar no começo, repetidos ou logo antes do @.";
+  if(FALSOS.test(d)||LOCAIS.test(u))return "Informe um e-mail válido que você usa.";return null}
 
 /* ---------- máscaras ---------- */
 const MASK={
@@ -240,7 +252,7 @@ function check(f,final){const p=f.closest(".pessoa"),k=f.dataset.f,v=val(p,k),ti
       else if(!tit&&(par===1||par===6)&&a>=18)warn="Filho(a) ou enteado(a) maior de idade: a Vida e Saúde vai conferir."}}
   else if(k==="naturalidade"){if(v.length<2)err="Informe a cidade onde nasceu."}
   else if(k==="celular"){if(!/^\d{2}9\d{8}$/.test(dig(v)))err="Informe DDD + celular com 9 dígitos, começando com 9."}
-  else if(k==="email"){if(!emailOk(v))err="Informe um e-mail válido que você usa."}
+  else if(k==="email"){err=emailProblema(v)||""}
   else if(k==="email2"){if(v.toLowerCase()!==val(p,"email").toLowerCase())err="Os e-mails não são iguais."}
   else if(k==="cep"){if(dig(v).length!==8)err="CEP com 8 números."}
   else if(k==="numero"){if(!/^(\d{1,6}[A-Za-z]?|S\/N)$/i.test(v))err="Informe o número (ou S/N se não tiver)."}
